@@ -14,3 +14,8 @@ out/
 
 # logs
 npm-debug.log*
+
+*.csv
+
+# carga da planilha com dados pessoais
+supabase/.seed.local.sql
