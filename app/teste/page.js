@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 import { supabase } from "../../lib/supabase"
 
 export default function Financeiro() {
@@ -341,12 +342,12 @@ export default function Financeiro() {
             </div>
 
             <div className="col-6 col-md-3">
-              <a
+              <Link
                 href="/"
                 className="btn btn-outline-secondary w-100 py-2"
               >
                 Dashboard
-              </a>
+              </Link>
             </div>
 
           </div>

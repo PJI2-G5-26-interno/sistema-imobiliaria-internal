@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import { formatarCpf, formatarTelefone } from "../../lib/formatacao"
 import LogoutButton from "../components/LogoutButton"
 
 export default function Clientes() {
@@ -257,16 +258,6 @@ export default function Clientes() {
           "Não foi possível excluir o cliente."
       )
     }
-  }
-
-  function formatarTelefone(valor) {
-    if (!valor) return "-"
-    return valor
-  }
-
-  function formatarCpf(valor) {
-    if (!valor) return "-"
-    return valor
   }
 
   function fecharMensagemSucesso() {

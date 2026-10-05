@@ -19,3 +19,12 @@ npm-debug.log*
 
 # carga da planilha com dados pessoais
 supabase/.seed.local.sql
+
+# dump completo com hashes de senha e dados pessoais
+docs/imobgest.sql
+
+# senha do banco e chaves geradas no setup local
+supabase/.temp/
+
+.vercel
+.env*

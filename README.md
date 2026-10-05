@@ -292,7 +292,7 @@ sistema-imobiliaria/
 
 Clone o repositório:
 
-git clone https://github.com/MarianeStriani/sistema-imobiliaria.git
+git clone https://github.com/PJI2-G5-26-interno/sistema-imobiliaria-internal.git
 
 Entre na pasta:
 
@@ -337,19 +337,22 @@ npm run dev
 
 ☁️ Deploy
 
-O projeto pode ser publicado utilizando a Vercel.
+A Vercel publica sozinha a partir do GitHub. Não é preciso rodar `vercel --prod` no dia a dia.
 
-Fluxo de publicação:
+| Branch | O que acontece no push | URL |
+| --- | --- | --- |
+| `develop` | ambiente de teste | https://imobgest-git-develop-gmugnattos-projects.vercel.app |
+| `main` | produção | https://imobgest-sand.vercel.app |
 
-GitHub
-   ↓
-Vercel
-   ↓
-Next.js
-   ↓
-Supabase
+Fluxo de uma alteração:
 
-As variáveis de ambiente do Supabase devem ser configuradas também no ambiente de produção.
+1. Crie a branch a partir de `develop` e faça o commit.
+2. Abra o pull request para `develop`. O GitHub Actions roda lint, scan de dependências e a suíte de integração (testes e build).
+3. Depois do merge, a Vercel atualiza a URL de `develop`. Teste lá.
+4. Abra o pull request de `develop` para `main`. Os mesmos checks rodam de novo.
+5. O merge em `main` atualiza a produção.
+
+O banco é o projeto Supabase `krpbozqmhojrciguubyd`, na região sa-east-1. Mudança de schema entra como arquivo novo em `supabase/migrations` e é aplicada com `npx supabase db push` antes do merge que depende dela. O login da aplicação procura o administrador pelo nome.
 
 ---
 
