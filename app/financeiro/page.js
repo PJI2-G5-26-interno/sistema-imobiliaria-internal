@@ -138,7 +138,8 @@ export default function FinanceiroPage() {
       )
       .filter((item) =>
         dataValida(
-          item.data_recebimento
+          item.data_recebimento ||
+            item.data_pagamento
         )
       )
       .map((item) => ({
@@ -152,7 +153,8 @@ export default function FinanceiroPage() {
           item.valor || 0
         ),
         data:
-          item.data_recebimento,
+          item.data_recebimento ||
+          item.data_pagamento,
         formaPagamento:
           item.forma_pagamento ||
           "-",
