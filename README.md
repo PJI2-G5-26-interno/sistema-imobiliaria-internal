@@ -171,40 +171,8 @@ Permite acompanhar:
 
 ---
 
-📱 Comunicação com clientes
 
-O sistema possui uma área de comunicação com mensagens previamente configuradas.
 
-Exemplos:
-
-- Lembrete de vencimento
-- Aviso de contrato próximo do vencimento
-- Aviso de visita de manutenção
-- Confirmação de visita
-- Aviso de pagamento
-- Outras mensagens administrativas
-
-As mensagens podem ser preparadas para envio pelo WhatsApp, utilizando os dados cadastrados no sistema.
-
----
-
-🔔 Acusação de recebimento
-
-O sistema também pode registrar o acompanhamento das comunicações enviadas aos clientes.
-
-Exemplo:
-
-Mensagem enviada
-       ↓
-Cliente recebeu
-       ↓
-Cliente confirmou recebimento
-       ↓
-Registro no sistema
-
-Essa funcionalidade é voltada para o controle administrativo e não depende de integração bancária.
-
----
 
 🗄️ Banco de dados
 
