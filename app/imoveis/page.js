@@ -653,7 +653,7 @@ export default function Imoveis() {
       </div>
 
       {/* MENSAGEM DE ERRO */}
-      {erro && (
+      {erro && !modalAberto && (
         <div
           className="alert alert-danger alert-dismissible fade show"
           role="alert"
@@ -1159,6 +1159,10 @@ export default function Imoveis() {
                       ? "Atualize os dados do imóvel."
                       : "Preencha os dados para cadastrar um novo imóvel."}
                   </small>
+                  <small className="d-block mt-1 text-muted">
+                    <span className="text-danger" aria-hidden="true">*</span>{" "}
+                    Campo obrigatório
+                  </small>
                 </div>
 
                 <button
@@ -1172,6 +1176,25 @@ export default function Imoveis() {
 
               {/* CORPO DO MODAL */}
               <div className="modal-body">
+
+                {erro && (
+                  <div
+                    className="alert alert-danger d-flex align-items-center gap-2"
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    <i className="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                    <span>{erro}</span>
+                    <button
+                      type="button"
+                      className="btn-close ms-auto"
+                      aria-label="Fechar mensagem de erro"
+                      onClick={() => setErro("")}
+                    />
+                  </div>
+                )}
+
+                <form id="form-imovel" onSubmit={salvarImovel}>
 
                 {/* DADOS PRINCIPAIS */}
                 <div className="card border-0 bg-light mb-4">
@@ -1204,7 +1227,7 @@ export default function Imoveis() {
                       {/* TÍTULO */}
                       <div className="col-12 col-md-8">
                         <label className="form-label fw-semibold">
-                          Nome do imóvel
+                          Nome do imóvel <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <input
@@ -1331,7 +1354,7 @@ export default function Imoveis() {
                       {/* VALOR */}
                       <div className="col-12 col-md-4">
                         <label className="form-label fw-semibold">
-                          Valor
+                          Valor <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <div className="input-group">
@@ -1350,7 +1373,7 @@ export default function Imoveis() {
                               )
                             }
                             placeholder="0,00"
-                            min="0"
+                            min="0.01"
                             step="0.01"
                             required
                           />
@@ -1443,7 +1466,7 @@ export default function Imoveis() {
                       {/* LOGRADOURO */}
                       <div className="col-12 col-md-8">
                         <label className="form-label fw-semibold">
-                          Logradouro
+                          Logradouro <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <input
@@ -1524,7 +1547,7 @@ export default function Imoveis() {
                       {/* CIDADE */}
                       <div className="col-12 col-md-8">
                         <label className="form-label fw-semibold">
-                          Cidade
+                          Cidade <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <input
@@ -1599,7 +1622,7 @@ export default function Imoveis() {
 
                       <div className="col-12 col-md-6">
                         <label className="form-label fw-semibold" htmlFor="nome-proprietario">
-                          Nome do proprietário
+                          Nome do proprietário <span className="text-danger" aria-hidden="true">*</span>
                         </label>
                         <input
                           id="nome-proprietario"
@@ -1736,6 +1759,7 @@ export default function Imoveis() {
                   </div>
                 </div>
 
+                </form>
               </div>
 
               {/* RODAPÉ DO MODAL */}
@@ -1752,9 +1776,9 @@ export default function Imoveis() {
                 </button>
 
                 <button
-                  type="button"
+                  type="submit"
                   className="btn btn-primary"
-                  onClick={salvarImovel}
+                  form="form-imovel"
                   disabled={salvando}
                 >
                   {salvando ? (
