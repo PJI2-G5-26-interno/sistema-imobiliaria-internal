@@ -1121,6 +1121,10 @@ export default function Imoveis() {
                         </div>
                       </td>
 
+                    </tr>
+                  ))}
+                </tbody>
+
               </table>
 
             </div>
@@ -1754,6 +1758,12 @@ export default function Imoveis() {
                   disabled={salvando}
                 >
                   {salvando ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                      ></span>
+                      Salvando...
                     </>
                   ) : (
                     <>
