@@ -340,6 +340,63 @@ export default function Dashboard() {
       .slice(0, 5)
   }, [recebimentos])
 
+  const despesasPagasMes = useMemo(() => {
+    return despesasMes.filter((item) => {
+      const status = String(item.status || "").toLowerCase()
+      return status.includes("pago") || status.includes("paga")
+    }).length
+  }, [despesasMes])
+
+  const despesasPendentesMes = useMemo(() => {
+    return despesasMes.filter((item) => {
+      return String(item.status || "")
+        .toLowerCase()
+        .includes("pend")
+    }).length
+  }, [despesasMes])
+
+  const despesasPorCategoria = useMemo(() => {
+    const mapa = new Map()
+
+    for (const item of despesasMes) {
+      const categoria = item.categoria || "Outros"
+      const atual = mapa.get(categoria) || 0
+
+      mapa.set(
+        categoria,
+        atual +
+          numero(
+            item.valor ||
+              item.valor_pago ||
+              item.total
+          )
+      )
+    }
+
+    return [...mapa.entries()].sort((a, b) => b[1] - a[1])
+  }, [despesasMes])
+
+  const ultimasDespesas = useMemo(() => {
+    return [...despesas]
+      .sort((a, b) => {
+        const dataA = dataValida(
+          a.data_despesa ||
+            a.data_pagamento ||
+            a.created_at
+        )
+        const dataB = dataValida(
+          b.data_despesa ||
+            b.data_pagamento ||
+            b.created_at
+        )
+
+        return (dataB?.getTime() || 0) - (dataA?.getTime() || 0)
+      })
+      .slice(0, 5)
+  }, [despesas])
+
+  const maiorCategoria = despesasPorCategoria[0]?.[1] || 0
+
   const percentualAlugados =
     totalImoveis > 0
       ? Math.round(
@@ -389,109 +446,13 @@ export default function Dashboard() {
   return (
     <div className="container-fluid py-4">
 
-           {/* ACESSO RÁPIDO */}
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body">
-
-          <div className="d-flex align-items-center mb-3">
-            <div
-              className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
-              style={{
-                width: "38px",
-                height: "38px",
-              }}
-            >
-              <i className="bi bi-lightning-charge text-primary"></i>
-            </div>
-
-            <div>
-              <h5 className="fw-bold mb-0">
-                Acesso rápido
-              </h5>
-            </div>
-          </div>
-
-          <div className="row g-2">
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/")}
-              >
-                <i className="bi bi-speedometer2 d-block fs-5 mb-1"></i>
-                Dashboard
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-primary w-100 py-2"
-                onClick={() => acessarPagina("/clientes")}
-              >
-                <i className="bi bi-people d-block fs-5 mb-1"></i>
-                Clientes
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/imoveis")}
-              >
-                <i className="bi bi-house-door d-block fs-5 mb-1"></i>
-                Imóveis
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/contratos")}
-              >
-                <i className="bi bi-file-earmark-text d-block fs-5 mb-1"></i>
-                Contratos
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/recebimentos")}
-              >
-                <i className="bi bi-cash-coin d-block fs-5 mb-1"></i>
-                Recebimentos
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/despesas")}
-              >
-                <i className="bi bi-wallet2 d-block fs-5 mb-1"></i>
-                Despesas
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/financeiro")}
-              >
-                <i className="bi bi-bar-chart-line d-block fs-5 mb-1"></i>
-                Financeiro
-              </button>
-            </div>
-
-          </div>
-        </div>
-      </div>
+           
 
 {/* CABEÇALHO */}
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
         <div>
           <h2 className="fw-bold mb-1">
-            ImobGest - Dashboard
+            Dashboard
           </h2>
         </div>
       </div>
@@ -821,6 +782,139 @@ export default function Dashboard() {
 
       </div>
 
+      {/* RESUMO DAS DESPESAS */}
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body">
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div>
+              <h5 className="fw-bold mb-1">
+                Resumo das despesas
+              </h5>
+              <p className="text-muted mb-0">
+                Competência de {hoje.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline-primary btn-sm"
+              onClick={() => acessarPagina("/despesas")}
+            >
+              Ver despesas
+              <i className="bi bi-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <div className="row g-3 mb-4">
+            <div className="col-12 col-md-4">
+              <div className="border rounded-3 p-3 h-100">
+                <p className="text-muted mb-1">Lançamentos no mês</p>
+                <h3 className="fw-bold mb-0">{despesasMes.length}</h3>
+              </div>
+            </div>
+            <div className="col-12 col-md-4">
+              <div className="border rounded-3 p-3 h-100">
+                <p className="text-muted mb-1">Pagas</p>
+                <h3 className="fw-bold mb-0">{despesasPagasMes}</h3>
+              </div>
+            </div>
+            <div className="col-12 col-md-4">
+              <div className="border rounded-3 p-3 h-100">
+                <p className="text-muted mb-1">Pendentes</p>
+                <h3 className="fw-bold mb-0">{despesasPendentesMes}</h3>
+              </div>
+            </div>
+          </div>
+
+          {despesasPorCategoria.length === 0 ? (
+            <p className="text-muted mb-4">
+              Nenhuma despesa lançada neste mês.
+            </p>
+          ) : (
+            <div className="mb-4" aria-label="Despesas por categoria">
+              {despesasPorCategoria.map(([categoria, valor]) => (
+                <div className="categoria-linha" key={categoria}>
+                  <span className="fw-semibold">{categoria}</span>
+                  <div
+                    className="progress"
+                    role="progressbar"
+                    aria-valuenow={maiorCategoria > 0 ? Math.round((valor / maiorCategoria) * 100) : 0}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={categoria}
+                  >
+                    <div
+                      className="progress-bar"
+                      style={{
+                        width: maiorCategoria > 0
+                          ? `${Math.round((valor / maiorCategoria) * 100)}%`
+                          : "0%",
+                      }}
+                    />
+                  </div>
+                  <strong>{formatarMoeda(valor)}</strong>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <h6 className="fw-bold mb-3">Últimas despesas</h6>
+
+          {ultimasDespesas.length === 0 ? (
+            <p className="text-muted mb-0">
+              Nenhuma despesa cadastrada.
+            </p>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Categoria</th>
+                    <th>Descrição</th>
+                    <th>Status</th>
+                    <th className="text-end">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ultimasDespesas.map((item, index) => {
+                    const status = String(item.status || "—")
+                    const statusPago = status.toLowerCase().includes("pago")
+
+                    return (
+                      <tr key={item.id || index}>
+                        <td>
+                          {formatarData(
+                            item.data_despesa ||
+                              item.data_pagamento ||
+                              item.created_at
+                          )}
+                        </td>
+                        <td className="fw-semibold">
+                          {item.categoria || "—"}
+                        </td>
+                        <td>{item.descricao || "—"}</td>
+                        <td>
+                          <span className={`badge ${statusPago ? "bg-success-subtle text-success" : "bg-warning-subtle text-warning-emphasis"}`}>
+                            {status}
+                          </span>
+                        </td>
+                        <td className="text-end fw-semibold">
+                          {formatarMoeda(
+                            item.valor ||
+                              item.valor_pago ||
+                              item.total
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* STATUS DOS IMÓVEIS */}
       <div className="row g-3 mb-4">
 
@@ -1009,7 +1103,7 @@ export default function Dashboard() {
 
                 <button
                   className="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0"
-                  onClick={() => acessarPagina("/manutencoes")}
+                  onClick={() => acessarPagina("/imoveis")}
                 >
                   <div className="d-flex align-items-center">
                     <i className="bi bi-tools text-primary me-3"></i>

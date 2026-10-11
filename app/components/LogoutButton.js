@@ -18,9 +18,10 @@ export default function LogoutButton() {
   return (
     <button
       type="button"
-      className="btn btn-outline-danger btn-sm px-3 py-2 ms-3"
+      className="btn btn-outline-danger btn-sm"
       onClick={sair}
     >
+      <i className="bi bi-box-arrow-right" aria-hidden="true" />
       Sair
     </button>
   );

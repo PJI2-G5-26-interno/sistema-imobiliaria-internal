@@ -4,6 +4,12 @@ Sistema web para gestão e administração de imóveis, desenvolvido para centra
 
 O projeto possui uma interface administrativa com dashboard, cadastros, controle financeiro e ferramentas de comunicação com clientes.
 
+Branch develop deve ser utilizada para ambiente de testes e faz deploy em:
+https://imobgest-git-develop-gmugnattos-projects.vercel.app
+
+Branch main é o ambiente de produção (com restrição de push direto na main), e faz deploy em:
+https://imobgest-sand.vercel.app
+
 ---
 
 🚀 Tecnologias utilizadas

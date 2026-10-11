@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../../lib/supabase"
-import LogoutButton from "../components/LogoutButton";
-
 export default function Recebimentos() {
   const hoje = new Date()
   const dataHoje = hoje.toISOString().split("T")[0]
@@ -133,10 +131,6 @@ export default function Recebimentos() {
   function limparMensagens() {
     setErro("")
     setSucesso("")
-  }
-
-  function acessarPagina(url) {
-    window.location.href = url
   }
 
   function formatarMoeda(valor) {
@@ -548,108 +542,9 @@ export default function Recebimentos() {
   }
 
   return (
-    <main className="container-fluid py-4">
+    <div className="container-fluid py-4">
 
-      {/* ACESSO RÁPIDO */}
-
-      <div className="card border-0 shadow-sm rounded-4 mb-4">
-
-        <div className="card-body">
-
-          <h5 className="h6 fw-bold mb-3">
-            Acesso rápido
-          </h5>
-       
-         
-        
-          <div className="row g-2">
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100"
-                onClick={() =>
-                  acessarPagina("/dashboard")
-                }
-              >
-                Dashboard
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100"
-                onClick={() =>
-                  acessarPagina("/imoveis")
-                }
-              >
-                Imóveis
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100"
-                onClick={() =>
-                  acessarPagina("/clientes")
-                }
-              >
-                Clientes
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100"
-                onClick={() =>
-                  acessarPagina("/contratos")
-                }
-              >
-                Contratos
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-primary w-100"
-              >
-                Recebimentos
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100"
-                onClick={() =>
-                  acessarPagina("/despesas")
-                }
-              >
-                Despesas
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100"
-                onClick={() =>
-                  acessarPagina("/financeiro")
-                }
-              >
-                Financeiro
-              </button>
-            </div>
-
-          </div>
-<LogoutButton/>
-        </div>
-
-      </div>
+      
 
       {/* CABEÇALHO */}
 
@@ -1813,6 +1708,6 @@ export default function Recebimentos() {
           </div>
         )}
 
-    </main>
+    </div>
   )
 }

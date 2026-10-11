@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import LogoutButton from "../components/LogoutButton";
-
 export default function DespesasPage() {
   const [despesas, setDespesas] = useState([]);
 
@@ -128,10 +126,6 @@ export default function DespesasPage() {
       ...estadoAtual,
       [campo]: valor,
     }));
-  }
-
-  function acessarPagina(pagina) {
-    window.location.href = pagina;
   }
 
   function formatarMoeda(valor) {
@@ -398,104 +392,7 @@ export default function DespesasPage() {
 
   return (
     <div className="container-fluid py-4">
-      {/* ACESSO RÁPIDO */}
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body">
-
-          <div className="d-flex align-items-center mb-3">
-            <div
-              className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
-              style={{
-                width: "38px",
-                height: "38px",
-              }}
-            >
-              <i className="bi bi-lightning-charge text-primary"></i>
-            </div>
-
-            <div>
-              <h5 className="fw-bold mb-0">
-                Acesso rápido
-              </h5>
-            </div>
-           <LogoutButton/>
-          </div>
-
-          <div className="row g-2">
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/")}
-              >
-                <i className="bi bi-speedometer2 d-block fs-5 mb-1"></i>
-                Dashboard
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-primary w-100 py-2"
-                onClick={() => acessarPagina("/clientes")}
-              >
-                <i className="bi bi-people d-block fs-5 mb-1"></i>
-                Clientes
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/imoveis")}
-              >
-                <i className="bi bi-house-door d-block fs-5 mb-1"></i>
-                Imóveis
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/contratos")}
-              >
-                <i className="bi bi-file-earmark-text d-block fs-5 mb-1"></i>
-                Contratos
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/recebimentos")}
-              >
-                <i className="bi bi-cash-coin d-block fs-5 mb-1"></i>
-                Recebimentos
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/despesas")}
-              >
-                <i className="bi bi-wallet2 d-block fs-5 mb-1"></i>
-                Despesas
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() => acessarPagina("/financeiro")}
-              >
-                <i className="bi bi-bar-chart-line d-block fs-5 mb-1"></i>
-                Financeiro
-              </button>
-            </div>
-
-          </div>
-        </div>
-      </div>
+      
 
       {/* CABEÇALHO */}
       <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
@@ -515,7 +412,7 @@ export default function DespesasPage() {
           <div>
 
             <h2 className="mb-1 fw-bold">
-              ImobGest - Despesas
+              Despesas
             </h2>
 
             <p className="text-muted mb-0">
@@ -526,21 +423,25 @@ export default function DespesasPage() {
 
         </div>
 
-        <button
-          type="button"
-          className="btn btn-outline-primary"
-          onClick={
-            carregarDespesas
-          }
-          disabled={loading}
-        >
-          <i className="bi bi-arrow-clockwise me-2"></i>
-
-          {loading
-            ? "Atualizando..."
-            : "Atualizar"}
-
-        </button>
+        <div className="d-flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={carregarDespesas}
+            disabled={loading}
+          >
+            <i className="bi bi-arrow-clockwise" aria-hidden="true"></i>
+            {loading ? "Atualizando..." : "Atualizar"}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={abrirNovaDespesa}
+          >
+            <i className="bi bi-plus-lg" aria-hidden="true"></i>
+            Nova despesa
+          </button>
+        </div>
 
       </div>
 
@@ -690,30 +591,14 @@ export default function DespesasPage() {
               </div>
 
               <div>
-
                 <h5 className="mb-1 fw-bold">
                   Despesas cadastradas
                 </h5>
-
                 <small className="text-muted">
                   Gerencie as despesas do sistema
                 </small>
-
               </div>
-
             </div>
-
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={
-                abrirNovaDespesa
-              }
-            >
-              <i className="bi bi-plus-lg me-2"></i>
-              Nova despesa
-            </button>
-
           </div>
 
           {/* FILTROS */}
