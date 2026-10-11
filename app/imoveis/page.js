@@ -2,7 +2,37 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../../lib/supabase"
-import LogoutButton from "../components/LogoutButton";
+
+const INFO_VAZIA = {
+  nome_proprietario: "",
+  codigo_cliente_elektro: "",
+  codigo_medidor_elektro: "",
+  codigo_cliente_sabesp_rgi: "",
+  codigo_medidor_sabesp: "",
+  codigo_iptu: "",
+}
+
+function infoDoImovel(imovel) {
+  const lista = imovel?.informacoes_adicionais_imoveis
+
+  if (Array.isArray(lista)) {
+    return lista[0] || null
+  }
+
+  return lista || null
+}
+
+function textoOuTraco(valor) {
+  const texto = String(valor || "").trim()
+  return texto || "—"
+}
+
+function rotuloStatus(status) {
+  if (status === "disponivel") return "Disponível"
+  if (status === "alugado") return "Alugado"
+  if (status === "manutencao") return "Em manutenção"
+  return status || "Não informado"
+}
 
 export default function Imoveis() {
   const [imoveis, setImoveis] = useState([])
@@ -17,6 +47,7 @@ export default function Imoveis() {
   const [filtroStatus, setFiltroStatus] = useState("todos")
 
   const [modalAberto, setModalAberto] = useState(false)
+  const [visualizando, setVisualizando] = useState(null)
   const [editando, setEditando] = useState(null)
 
   const [form, setForm] = useState({
@@ -37,6 +68,7 @@ export default function Imoveis() {
 
     descricao: "",
     observacoes: "",
+    ...INFO_VAZIA,
   })
 
   async function carregarImoveis() {
@@ -46,7 +78,7 @@ export default function Imoveis() {
     try {
       const { data, error } = await supabase
         .from("imoveis")
-        .select("*")
+        .select("*, informacoes_adicionais_imoveis(*)")
         .order("id", {
           ascending: false,
         })
@@ -75,13 +107,35 @@ export default function Imoveis() {
     carregarImoveis()
   }, [])
 
+  useEffect(() => {
+    function aoPressionarTecla(event) {
+      if (event.key !== "Escape" || salvando) {
+        return
+      }
+
+      if (visualizando) {
+        setVisualizando(null)
+        return
+      }
+
+      if (modalAberto) {
+        setModalAberto(false)
+        setEditando(null)
+        setForm(formularioInicial())
+        setErro("")
+        setSucesso("")
+      }
+    }
+
+    document.addEventListener("keydown", aoPressionarTecla)
+    return () => {
+      document.removeEventListener("keydown", aoPressionarTecla)
+    }
+  }, [modalAberto, visualizando, salvando])
+
   function limparMensagens() {
     setErro("")
     setSucesso("")
-  }
-
-  function acessarPagina(url) {
-    window.location.href = url
   }
 
   function formularioInicial() {
@@ -103,6 +157,7 @@ export default function Imoveis() {
 
       descricao: "",
       observacoes: "",
+      ...INFO_VAZIA,
     }
   }
 
@@ -184,6 +239,8 @@ export default function Imoveis() {
   function abrirEditarImovel(imovel) {
     limparMensagens()
 
+    const info = infoDoImovel(imovel) || {}
+
     setEditando(imovel)
 
     setForm({
@@ -216,6 +273,18 @@ export default function Imoveis() {
         imovel.descricao || "",
       observacoes:
         imovel.observacoes || "",
+      nome_proprietario:
+        info.nome_proprietario || "",
+      codigo_cliente_elektro:
+        info.codigo_cliente_elektro || "",
+      codigo_medidor_elektro:
+        info.codigo_medidor_elektro || "",
+      codigo_cliente_sabesp_rgi:
+        info.codigo_cliente_sabesp_rgi || "",
+      codigo_medidor_sabesp:
+        info.codigo_medidor_sabesp || "",
+      codigo_iptu:
+        info.codigo_iptu || "",
     })
 
     setModalAberto(true)
@@ -310,11 +379,55 @@ export default function Imoveis() {
         throw resultado.error
       }
 
+      const infoDados = {
+        imovel_id: resultado.data.id,
+        nome_proprietario:
+          form.nome_proprietario?.trim() || null,
+        codigo_cliente_elektro:
+          form.codigo_cliente_elektro?.trim() || null,
+        codigo_medidor_elektro:
+          form.codigo_medidor_elektro?.trim() || null,
+        codigo_cliente_sabesp_rgi:
+          form.codigo_cliente_sabesp_rgi?.trim() || null,
+        codigo_medidor_sabesp:
+          form.codigo_medidor_sabesp?.trim() || null,
+        codigo_iptu:
+          form.codigo_iptu?.trim() || null,
+      }
+
+      const infoAtual = editando
+        ? infoDoImovel(editando)
+        : null
+
+      const infoResultado = infoAtual?.id
+        ? await supabase
+            .from("informacoes_adicionais_imoveis")
+            .update(infoDados)
+            .eq("id", infoAtual.id)
+            .select()
+            .single()
+        : await supabase
+            .from("informacoes_adicionais_imoveis")
+            .insert([infoDados])
+            .select()
+            .single()
+
+      if (infoResultado.error) {
+        throw infoResultado.error
+      }
+
+      const imovelCompleto = {
+        ...resultado.data,
+        informacoes_adicionais_imoveis: [
+          infoResultado.data,
+        ],
+      }
+
       if (editando) {
         setImoveis((anteriores) =>
           anteriores.map((imovel) =>
             imovel.id === editando.id
-              ? resultado.data
+              ? imovelCompleto
               : imovel
           )
         )
@@ -324,7 +437,7 @@ export default function Imoveis() {
         )
       } else {
         setImoveis((anteriores) => [
-          resultado.data,
+          imovelCompleto,
           ...anteriores,
         ])
 
@@ -424,12 +537,35 @@ export default function Imoveis() {
           .toLowerCase()
           .includes(texto)
 
+      const info = infoDoImovel(imovel) || {}
+
+      const correspondeCodigos =
+        !texto ||
+        String(info.codigo_cliente_elektro || "")
+          .toLowerCase()
+          .includes(texto) ||
+        String(info.codigo_medidor_elektro || "")
+          .toLowerCase()
+          .includes(texto) ||
+        String(info.codigo_cliente_sabesp_rgi || "")
+          .toLowerCase()
+          .includes(texto) ||
+        String(info.codigo_medidor_sabesp || "")
+          .toLowerCase()
+          .includes(texto) ||
+        String(info.codigo_iptu || "")
+          .toLowerCase()
+          .includes(texto) ||
+        String(info.nome_proprietario || "")
+          .toLowerCase()
+          .includes(texto)
+
       const correspondeStatus =
         filtroStatus === "todos" ||
         imovel.status === filtroStatus
 
       return (
-        correspondeBusca &&
+        (correspondeBusca || correspondeCodigos) &&
         correspondeStatus
       )
     })
@@ -459,125 +595,7 @@ export default function Imoveis() {
   return (
     <div className="container-fluid py-4">
 
-{/* ACESSO RÁPIDO */}
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-body">
 
-          <div className="d-flex align-items-center mb-3">
-            <div
-              className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2"
-              style={{
-                width: "38px",
-                height: "38px",
-              }}
-            >
-              <i className="bi bi-lightning-charge text-primary"></i>
-            </div>
-
-            <div>
-              <h5 className="fw-bold mb-0">
-                Acesso rápido
-              </h5>
-            </div>
-           <LogoutButton/>
-          </div>
-
-          <div className="row g-2">
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() =>
-                  acessarPagina("/")
-                }
-              >
-                <i className="bi bi-speedometer2 d-block fs-5 mb-1"></i>
-                Dashboard
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() =>
-                  acessarPagina("/clientes")
-                }
-              >
-                <i className="bi bi-people d-block fs-5 mb-1"></i>
-                Clientes
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-primary w-100 py-2"
-                onClick={() =>
-                  acessarPagina("/imoveis")
-                }
-              >
-                <i className="bi bi-house-door d-block fs-5 mb-1"></i>
-                Imóveis
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() =>
-                  acessarPagina("/contratos")
-                }
-              >
-                <i className="bi bi-file-earmark-text d-block fs-5 mb-1"></i>
-                Contratos
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() =>
-                  acessarPagina("/recebimentos")
-                }
-              >
-                <i className="bi bi-cash-coin d-block fs-5 mb-1"></i>
-                Recebimentos
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() =>
-                  acessarPagina("/despesas")
-                }
-              >
-                <i className="bi bi-wallet2 d-block fs-5 mb-1"></i>
-                Despesas
-              </button>
-            </div>
-
-            <div className="col-6 col-md-3 col-lg-2">
-              <button
-                type="button"
-                className="btn btn-outline-primary w-100 py-2"
-                onClick={() =>
-                  acessarPagina("/financeiro")
-                }
-              >
-                <i className="bi bi-bar-chart-line d-block fs-5 mb-1"></i>
-                Financeiro
-              </button>
-            </div>
-
-          </div>
-        </div>
-      </div>
 
       {/* CABEÇALHO */}
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
@@ -829,7 +847,7 @@ export default function Imoveis() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Código, título, tipo, endereço, bairro ou cidade..."
+                  placeholder="Código, título, endereço, Elektro, Sabesp, hidrômetro ou IPTU..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
                 />
@@ -957,7 +975,7 @@ export default function Imoveis() {
                     <tr key={imovel.id}>
 
                       <td>
-                        <span className="fw-semibold">
+                        <span className="fw-semibold text-nowrap">
                           {imovel.codigo || "-"}
                         </span>
                       </td>
@@ -1059,26 +1077,35 @@ export default function Imoveis() {
 
                           <button
                             type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() =>
+                              setVisualizando(imovel)
+                            }
+                          >
+                            <i className="bi bi-eye" aria-hidden="true"></i>
+                            Ver
+                          </button>
+
+                          <button
+                            type="button"
                             className="btn btn-sm btn-outline-primary"
-                            title="Editar imóvel"
                             onClick={() =>
                               abrirEditarImovel(imovel)
                             }
                           >
-                            <i className="bi bi-pencil"></i>
-                         Editar
+                            <i className="bi bi-pencil" aria-hidden="true"></i>
+                            Editar
                           </button>
 
                           <button
                             type="button"
                             className="btn btn-sm btn-outline-danger"
-                            title="Excluir imóvel"
                             onClick={() =>
                               excluirImovel(imovel.id)
                             }
                           >
-                            <i className="bi bi-trash"></i>
-                          Excluir
+                            <i className="bi bi-trash" aria-hidden="true"></i>
+                            Excluir
                           </button>
 
                         </div>
@@ -1129,6 +1156,7 @@ export default function Imoveis() {
                 <button
                   type="button"
                   className="btn-close"
+                  aria-label="Fechar"
                   onClick={fecharModal}
                   disabled={salvando}
                 ></button>
@@ -1413,6 +1441,7 @@ export default function Imoveis() {
                           <button
                             type="button"
                             className="btn btn-outline-primary"
+                            aria-label="Buscar CEP"
                             onClick={() =>
                               buscarCEP(form.cep)
                             }
@@ -1570,12 +1599,108 @@ export default function Imoveis() {
                         </h6>
 
                         <small className="text-muted">
-                          Adicione detalhes complementares do imóvel.
+                          Concessionárias, IPTU, descrição e observações.
                         </small>
                       </div>
                     </div>
 
                     <div className="row g-3">
+
+                      <div className="col-12 col-md-6">
+                        <label className="form-label fw-semibold" htmlFor="nome-proprietario">
+                          Nome do proprietário
+                        </label>
+                        <input
+                          id="nome-proprietario"
+                          type="text"
+                          className="form-control"
+                          value={form.nome_proprietario}
+                          onChange={(e) =>
+                            alterarCampo("nome_proprietario", e.target.value)
+                          }
+                          placeholder="Nome do proprietário"
+                        />
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <label className="form-label fw-semibold" htmlFor="codigo-iptu">
+                          Código do IPTU
+                        </label>
+                        <input
+                          id="codigo-iptu"
+                          type="text"
+                          className="form-control"
+                          value={form.codigo_iptu}
+                          onChange={(e) =>
+                            alterarCampo("codigo_iptu", e.target.value)
+                          }
+                          placeholder="Inscrição do IPTU"
+                        />
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <label className="form-label fw-semibold" htmlFor="codigo-cliente-elektro">
+                          Código do cliente Elektro
+                        </label>
+                        <input
+                          id="codigo-cliente-elektro"
+                          type="text"
+                          className="form-control"
+                          value={form.codigo_cliente_elektro}
+                          onChange={(e) =>
+                            alterarCampo("codigo_cliente_elektro", e.target.value)
+                          }
+                          placeholder="Código do cliente na Elektro"
+                        />
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <label className="form-label fw-semibold" htmlFor="codigo-medidor-elektro">
+                          Código do medidor Elektro
+                        </label>
+                        <input
+                          id="codigo-medidor-elektro"
+                          type="text"
+                          className="form-control"
+                          value={form.codigo_medidor_elektro}
+                          onChange={(e) =>
+                            alterarCampo("codigo_medidor_elektro", e.target.value)
+                          }
+                          placeholder="Número do medidor"
+                        />
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <label className="form-label fw-semibold" htmlFor="codigo-sabesp">
+                          Código do cliente Sabesp (RGI)
+                        </label>
+                        <input
+                          id="codigo-sabesp"
+                          type="text"
+                          className="form-control"
+                          value={form.codigo_cliente_sabesp_rgi}
+                          onChange={(e) =>
+                            alterarCampo("codigo_cliente_sabesp_rgi", e.target.value)
+                          }
+                          placeholder="RGI da Sabesp"
+                        />
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <label className="form-label fw-semibold" htmlFor="codigo-hidrometro">
+                          Código do hidrômetro
+                        </label>
+                        <input
+                          id="codigo-hidrometro"
+                          type="text"
+                          className="form-control"
+                          value={form.codigo_medidor_sabesp}
+                          onChange={(e) =>
+                            alterarCampo("codigo_medidor_sabesp", e.target.value)
+                          }
+                          placeholder="Número do hidrômetro"
+                        />
+                      </div>
 
                       <div className="col-12">
                         <label className="form-label fw-semibold">
@@ -1664,6 +1789,169 @@ export default function Imoveis() {
           </div>
         </div>
       )}
+
+      {visualizando && (
+        <div
+          className="modal fade show d-block app-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="titulo-detalhe-imovel"
+          tabIndex={-1}
+        >
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header">
+                <div>
+                  <h2
+                    id="titulo-detalhe-imovel"
+                    className="h5 modal-title fw-bold mb-1"
+                  >
+                    {visualizando.titulo || "Imóvel"}
+                  </h2>
+                  <p className="text-muted small mb-0">
+                    Código {textoOuTraco(visualizando.codigo)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Fechar"
+                  onClick={() => setVisualizando(null)}
+                />
+              </div>
+
+              <div className="modal-body">
+                <h3 className="h6 fw-bold mb-3">Dados do imóvel</h3>
+                <div className="detalhe-grade mb-4">
+                  <div>
+                    <span>Tipo</span>
+                    <strong>{textoOuTraco(visualizando.tipo)}</strong>
+                  </div>
+                  <div>
+                    <span>Finalidade</span>
+                    <strong>{textoOuTraco(visualizando.finalidade)}</strong>
+                  </div>
+                  <div>
+                    <span>Status</span>
+                    <strong>{rotuloStatus(visualizando.status)}</strong>
+                  </div>
+                  <div>
+                    <span>Valor</span>
+                    <strong>
+                      {visualizando.valor
+                        ? Number(visualizando.valor).toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          })
+                        : "R$ 0,00"}
+                    </strong>
+                  </div>
+                </div>
+
+                <h3 className="h6 fw-bold mb-3">Endereço</h3>
+                <div className="detalhe-grade mb-4">
+                  <div>
+                    <span>CEP</span>
+                    <strong>{textoOuTraco(visualizando.cep)}</strong>
+                  </div>
+                  <div>
+                    <span>Logradouro</span>
+                    <strong>{textoOuTraco(visualizando.endereco)}</strong>
+                  </div>
+                  <div>
+                    <span>Número</span>
+                    <strong>{textoOuTraco(visualizando.numero)}</strong>
+                  </div>
+                  <div>
+                    <span>Complemento</span>
+                    <strong>{textoOuTraco(visualizando.complemento)}</strong>
+                  </div>
+                  <div>
+                    <span>Bairro</span>
+                    <strong>{textoOuTraco(visualizando.bairro)}</strong>
+                  </div>
+                  <div>
+                    <span>Cidade</span>
+                    <strong>{textoOuTraco(visualizando.cidade)}</strong>
+                  </div>
+                  <div>
+                    <span>UF</span>
+                    <strong>{textoOuTraco(visualizando.estado)}</strong>
+                  </div>
+                </div>
+
+                <h3 className="h6 fw-bold mb-3">Informações adicionais</h3>
+                <div className="detalhe-grade mb-4">
+                  <div>
+                    <span>Proprietário</span>
+                    <strong>
+                      {textoOuTraco(infoDoImovel(visualizando)?.nome_proprietario)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Código do IPTU</span>
+                    <strong>
+                      {textoOuTraco(infoDoImovel(visualizando)?.codigo_iptu)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Código do cliente Elektro</span>
+                    <strong>
+                      {textoOuTraco(infoDoImovel(visualizando)?.codigo_cliente_elektro)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Código do medidor Elektro</span>
+                    <strong>
+                      {textoOuTraco(infoDoImovel(visualizando)?.codigo_medidor_elektro)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Código do cliente Sabesp (RGI)</span>
+                    <strong>
+                      {textoOuTraco(infoDoImovel(visualizando)?.codigo_cliente_sabesp_rgi)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Código do hidrômetro</span>
+                    <strong>
+                      {textoOuTraco(infoDoImovel(visualizando)?.codigo_medidor_sabesp)}
+                    </strong>
+                  </div>
+                </div>
+
+                <h3 className="h6 fw-bold mb-3">Descrição</h3>
+                <p className="mb-4">{textoOuTraco(visualizando.descricao)}</p>
+                <h3 className="h6 fw-bold mb-3">Observações</h3>
+                <p className="mb-0">{textoOuTraco(visualizando.observacoes)}</p>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => setVisualizando(null)}
+                >
+                  Fechar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    const imovel = visualizando
+                    setVisualizando(null)
+                    abrirEditarImovel(imovel)
+                  }}
+                >
+                  <i className="bi bi-pencil" aria-hidden="true"></i>
+                  Editar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* RODAPÉ */}
       <div className="text-center text-muted py-3">
         <small>ImobGest</small>
