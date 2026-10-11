@@ -432,212 +432,16 @@ export default function FinanceiroPage() {
         </div>
       )}
 
-      {/* RESUMO FINANCEIRO */}
-      <div className="row g-4 mb-4">
-
-        <div className="col-12 col-md-6">
-          <div className="card shadow-sm border-0 h-100">
-
-            <div className="card-body">
-
-              <div className="d-flex align-items-center justify-content-between">
-
-                <div>
-
-                  <p className="text-muted mb-1">
-                    Saldo atual
-                  </p>
-
-                  <h3 className="fw-bold mb-0">
-                    {formatarMoeda(
-                      saldoAtual
-                    )}
-                  </h3>
-
-                </div>
-
-                <div
-                  className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                  }}
-                >
-                  <i className="bi bi-wallet2 text-primary fs-4"></i>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-
-        <div className="col-12 col-md-6">
-          <div className="card shadow-sm border-0 h-100">
-
-            <div className="card-body">
-
-              <div className="d-flex align-items-center justify-content-between">
-
-                <div>
-
-                  <p className="text-muted mb-1">
-                    Entradas
-                  </p>
-
-                  <h3 className="fw-bold text-success mb-0">
-                    {formatarMoeda(
-                      entradas
-                    )}
-                  </h3>
-
-                </div>
-
-                <div
-                  className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                  }}
-                >
-                  <i className="bi bi-arrow-down-circle text-success fs-4"></i>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-
-        <div className="col-12 col-md-6">
-          <div className="card shadow-sm border-0 h-100">
-
-            <div className="card-body">
-
-              <div className="d-flex align-items-center justify-content-between">
-
-                <div>
-
-                  <p className="text-muted mb-1">
-                    Saídas
-                  </p>
-
-                  <h3 className="fw-bold text-danger mb-0">
-                    {formatarMoeda(
-                      saidas
-                    )}
-                  </h3>
-
-                </div>
-
-                <div
-                  className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                  }}
-                >
-                  <i className="bi bi-arrow-up-circle text-danger fs-4"></i>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-
-        <div className="col-12 col-md-6">
-          <div className="card shadow-sm border-0 h-100">
-
-            <div className="card-body">
-
-              <div className="d-flex align-items-center justify-content-between">
-
-                <div>
-
-                  <p className="text-muted mb-1">
-                    Resultado
-                  </p>
-
-                  <h3
-                    className={
-                      resultadoPeriodo >= 0
-                        ? "fw-bold text-success mb-0"
-                        : "fw-bold text-danger mb-0"
-                    }
-                  >
-                    {formatarMoeda(
-                      resultadoPeriodo
-                    )}
-                  </h3>
-
-                </div>
-
-                <div
-                  className={
-                    resultadoPeriodo >= 0
-                      ? "bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
-                      : "bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center"
-                  }
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                  }}
-                >
-                  <i
-                    className={
-                      resultadoPeriodo >= 0
-                        ? "bi bi-bar-chart-line text-success fs-4"
-                        : "bi bi-bar-chart-line text-danger fs-4"
-                    }
-                  ></i>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-
-      </div>
+      
 
       {/* FILTROS */}
-      <div className="card shadow-sm border-0 mb-4">
+      
 
-        <div className="card-body">
+      <div className="card shadow-sm border-0 mb-4">
 
           <div className="d-flex align-items-center mb-3">
 
-            <div
-              className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-              style={{
-                width: "48px",
-                height: "48px",
-              }}
-            >
-              <i className="bi bi-funnel text-primary fs-4"></i>
-            </div>
-
-            <div>
-
-              <h5 className="mb-1 fw-bold">
-                Filtros
-              </h5>
-
-              <small className="text-muted">
-                Selecione o período para consultar as movimentações
-              </small>
-
-            </div>
-
-          </div>
-
-          <div className="row g-3">
-
+            
             <div className="col-12 col-md-6">
 
               <label
@@ -706,7 +510,6 @@ export default function FinanceiroPage() {
 
         </div>
 
-      </div>
 
       {/* RESUMO DO PERÍODO */}
       <div className="card shadow-sm border-0 mb-4">
@@ -730,10 +533,6 @@ export default function FinanceiroPage() {
               <h5 className="mb-1 fw-bold">
                 Resumo financeiro
               </h5>
-
-              <small className="text-muted">
-                Resultado do período selecionado
-              </small>
 
             </div>
 
@@ -796,7 +595,7 @@ export default function FinanceiroPage() {
                 <div className="d-flex align-items-center justify-content-between">
 
                   <span className="text-muted">
-                    Resultado
+                    Saldo
                   </span>
 
                   <i
@@ -1031,182 +830,6 @@ export default function FinanceiroPage() {
 
             </div>
           )}
-
-        </div>
-
-      </div>
-
-      {/* ENTRADAS E SAÍDAS */}
-      <div className="row g-4 mb-4">
-
-        {/* ENTRADAS */}
-        <div className="col-12 col-md-6">
-
-          <div className="card shadow-sm border-0 h-100">
-
-            <div className="card-body">
-
-              <div className="d-flex align-items-center mb-3">
-
-                <div
-                  className="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                  }}
-                >
-                  <i className="bi bi-arrow-down-circle text-success fs-4"></i>
-                </div>
-
-                <div>
-
-                  <h5 className="mb-1 fw-bold">
-                    Entradas
-                  </h5>
-
-                  <small className="text-muted">
-                    Valores recebidos no período
-                  </small>
-
-                </div>
-
-              </div>
-
-              <div className="d-flex align-items-center justify-content-between border rounded p-3">
-
-                <span className="text-muted">
-                  Total recebido
-                </span>
-
-                <strong className="text-success">
-                  {formatarMoeda(
-                    entradas
-                  )}
-                </strong>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* SAÍDAS */}
-        <div className="col-12 col-md-6">
-
-          <div className="card shadow-sm border-0 h-100">
-
-            <div className="card-body">
-
-              <div className="d-flex align-items-center mb-3">
-
-                <div
-                  className="bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                  }}
-                >
-                  <i className="bi bi-arrow-up-circle text-danger fs-4"></i>
-                </div>
-
-                <div>
-
-                  <h5 className="mb-1 fw-bold">
-                    Saídas
-                  </h5>
-
-                  <small className="text-muted">
-                    Valores gastos no período
-                  </small>
-
-                </div>
-
-              </div>
-
-              <div className="d-flex align-items-center justify-content-between border rounded p-3">
-
-                <span className="text-muted">
-                  Total gasto
-                </span>
-
-                <strong className="text-danger">
-                  {formatarMoeda(
-                    saidas
-                  )}
-                </strong>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* SALDO DO PERÍODO */}
-      <div className="card shadow-sm border-0 mb-4">
-
-        <div className="card-body">
-
-          <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
-
-            <div className="d-flex align-items-center">
-
-              <div
-                className={
-                  resultadoPeriodo >= 0
-                    ? "bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                    : "bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3"
-                }
-                style={{
-                  width: "48px",
-                  height: "48px",
-                }}
-              >
-                <i
-                  className={
-                    resultadoPeriodo >= 0
-                      ? "bi bi-wallet text-success fs-4"
-                      : "bi bi-wallet text-danger fs-4"
-                  }
-                ></i>
-              </div>
-
-              <div>
-
-                <h5 className="mb-1 fw-bold">
-                  Saldo do período
-                </h5>
-
-                <small className="text-muted">
-                  Entradas menos saídas
-                </small>
-
-              </div>
-
-            </div>
-
-            <div className="text-end">
-
-              <h3
-                className={
-                  resultadoPeriodo >= 0
-                    ? "fw-bold text-success mb-0"
-                    : "fw-bold text-danger mb-0"
-                }
-              >
-                {formatarMoeda(
-                  resultadoPeriodo
-                )}
-              </h3>
-
-            </div>
-
-          </div>
 
         </div>
 
