@@ -314,13 +314,6 @@ export default function Contratos() {
       setSalvando(true)
       limparMensagens()
 
-      if (!formulario.numero) {
-        setErro(
-          "Informe o número do contrato."
-        )
-        return
-      }
-
       if (!formulario.cliente) {
         setErro(
           "Selecione um cliente."
@@ -350,7 +343,7 @@ export default function Contratos() {
       }
 
       const dados = {
-        numero: formulario.numero,
+        numero: formulario.numero.trim() || null,
         cliente: formulario.cliente,
         imovel: formulario.imovel,
         tipo: formulario.tipo,
@@ -1214,7 +1207,7 @@ export default function Contratos() {
                       htmlFor="numero"
                       className="form-label fw-semibold"
                     >
-                      Nº do contrato
+                      Nº do contrato (opcional)
                     </label>
 
                     <input

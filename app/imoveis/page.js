@@ -51,7 +51,6 @@ export default function Imoveis() {
   const [editando, setEditando] = useState(null)
 
   const [form, setForm] = useState({
-    codigo: "",
     titulo: "",
     tipo: "Casa",
     finalidade: "Aluguel",
@@ -140,7 +139,6 @@ export default function Imoveis() {
 
   function formularioInicial() {
     return {
-      codigo: "",
       titulo: "",
       tipo: "Casa",
       finalidade: "Aluguel",
@@ -244,7 +242,6 @@ export default function Imoveis() {
     setEditando(imovel)
 
     setForm({
-      codigo: imovel.codigo || "",
       titulo: imovel.titulo || "",
       tipo: imovel.tipo || "Casa",
       finalidade:
@@ -305,13 +302,36 @@ export default function Imoveis() {
     e.preventDefault()
 
     limparMensagens()
+
+    if (!form.titulo?.trim()) {
+      setErro("Informe o nome do imóvel.")
+      return
+    }
+
+    if (!form.endereco?.trim()) {
+      setErro("Informe o endereço do imóvel.")
+      return
+    }
+
+    if (!form.cidade?.trim()) {
+      setErro("Informe a cidade do imóvel.")
+      return
+    }
+
+    if (!form.nome_proprietario?.trim()) {
+      setErro("Informe o nome do proprietário.")
+      return
+    }
+
+    if (!form.valor || Number(form.valor) <= 0) {
+      setErro("Informe um valor válido para o imóvel.")
+      return
+    }
+
     setSalvando(true)
 
     try {
       const dados = {
-        codigo:
-          form.codigo?.trim() || null,
-
         titulo:
           form.titulo?.trim() || null,
 
@@ -518,9 +538,6 @@ export default function Imoveis() {
     return imoveis.filter((imovel) => {
       const correspondeBusca =
         !texto ||
-        String(imovel.codigo || "")
-          .toLowerCase()
-          .includes(texto) ||
         String(imovel.titulo || "")
           .toLowerCase()
           .includes(texto) ||
@@ -847,7 +864,7 @@ export default function Imoveis() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Código, título, endereço, Elektro, Sabesp, hidrômetro ou IPTU..."
+                  placeholder="Nome, endereço, Elektro, Sabesp, hidrômetro ou IPTU..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
                 />
@@ -955,7 +972,6 @@ export default function Imoveis() {
 
                 <thead className="table-light">
                   <tr>
-                    <th>Código</th>
                     <th>Imóvel</th>
                     <th>Tipo</th>
                     <th>Finalidade</th>
@@ -973,12 +989,6 @@ export default function Imoveis() {
                   {imoveisFiltrados.map((imovel) => (
 
                     <tr key={imovel.id}>
-
-                      <td>
-                        <span className="fw-semibold text-nowrap">
-                          {imovel.codigo || "-"}
-                        </span>
-                      </td>
 
                       <td>
                         <div className="d-flex align-items-center">
@@ -1111,12 +1121,6 @@ export default function Imoveis() {
                         </div>
                       </td>
 
-                    </tr>
-
-                  ))}
-
-                </tbody>
-
               </table>
 
             </div>
@@ -1193,30 +1197,10 @@ export default function Imoveis() {
 
                     <div className="row g-3">
 
-                      {/* CÓDIGO */}
-                      <div className="col-12 col-md-4">
-                        <label className="form-label fw-semibold">
-                          Código
-                        </label>
-
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={form.codigo}
-                          onChange={(e) =>
-                            alterarCampo(
-                              "codigo",
-                              e.target.value
-                            )
-                          }
-                          placeholder="Ex.: IM001"
-                        />
-                      </div>
-
                       {/* TÍTULO */}
                       <div className="col-12 col-md-8">
                         <label className="form-label fw-semibold">
-                          Título
+                          Nome do imóvel
                         </label>
 
                         <input
@@ -1364,6 +1348,7 @@ export default function Imoveis() {
                             placeholder="0,00"
                             min="0"
                             step="0.01"
+                            required
                           />
                         </div>
                       </div>
@@ -1468,6 +1453,7 @@ export default function Imoveis() {
                             )
                           }
                           placeholder="Rua, avenida, estrada..."
+                          required
                         />
                       </div>
 
@@ -1548,6 +1534,7 @@ export default function Imoveis() {
                             )
                           }
                           placeholder="Cidade"
+                          required
                         />
                       </div>
 
@@ -1619,6 +1606,7 @@ export default function Imoveis() {
                             alterarCampo("nome_proprietario", e.target.value)
                           }
                           placeholder="Nome do proprietário"
+                          required
                         />
                       </div>
 
@@ -1766,12 +1754,6 @@ export default function Imoveis() {
                   disabled={salvando}
                 >
                   {salvando ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                      ></span>
-                      Salvando...
                     </>
                   ) : (
                     <>
@@ -1808,9 +1790,6 @@ export default function Imoveis() {
                   >
                     {visualizando.titulo || "Imóvel"}
                   </h2>
-                  <p className="text-muted small mb-0">
-                    Código {textoOuTraco(visualizando.codigo)}
-                  </p>
                 </div>
                 <button
                   type="button"

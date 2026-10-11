@@ -150,6 +150,11 @@ export default function Clientes() {
       return
     }
 
+    if (!form.telefone.trim()) {
+      setErro("Informe o telefone do cliente.")
+      return
+    }
+
     setSalvando(true)
 
     try {
@@ -817,6 +822,7 @@ export default function Clientes() {
                           )
                         }
                         placeholder="Digite o telefone"
+                        required
                       />
 
                     </div>

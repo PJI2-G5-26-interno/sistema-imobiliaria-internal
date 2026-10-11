@@ -46,3 +46,20 @@ test("a migration cobre as tabelas que as telas consultam", () => {
     )
   }
 })
+
+test("a migration torna opcionais os campos fora das planilhas", () => {
+  const migration = fs.readFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "supabase",
+      "migrations",
+      "20261011120000_ajusta_campos_cadastro.sql"
+    ),
+    "utf8"
+  )
+
+  assert.match(migration, /imoveis[\s\S]*drop column if exists codigo/i)
+  assert.match(migration, /contratos[\s\S]*alter column numero drop not null/i)
+  assert.match(migration, /despesas[\s\S]*alter column categoria drop not null/i)
+})

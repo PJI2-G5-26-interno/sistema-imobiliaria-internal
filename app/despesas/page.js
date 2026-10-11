@@ -168,14 +168,6 @@ export default function DespesasPage() {
 
     try {
       if (
-        !form.categoria.trim()
-      ) {
-        throw new Error(
-          "Informe a categoria da despesa."
-        );
-      }
-
-      if (
         !form.descricao.trim()
       ) {
         throw new Error(
@@ -202,7 +194,7 @@ export default function DespesasPage() {
 
       const dados = {
         categoria:
-          form.categoria.trim(),
+          form.categoria.trim() || null,
 
         descricao:
           form.descricao.trim(),
@@ -1019,7 +1011,6 @@ export default function DespesasPage() {
                             e.target.value
                           )
                         }
-                        required
                       >
 
                         <option value="">

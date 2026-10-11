@@ -35,6 +35,9 @@ export default function Recebimentos() {
   const [selecionado, setSelecionado] =
     useState(null)
 
+  const [recebimentoEditando, setRecebimentoEditando] =
+    useState(null)
+
   const [formaPagamento, setFormaPagamento] =
     useState("")
 
@@ -324,6 +327,7 @@ export default function Recebimentos() {
 
   function abrirNovo() {
     limparMensagens()
+    setRecebimentoEditando(null)
 
     setFormulario(
       formularioVazio()
@@ -332,10 +336,29 @@ export default function Recebimentos() {
     setNovoAberto(true)
   }
 
+  function abrirEdicao(item) {
+    limparMensagens()
+    setRecebimentoEditando(item)
+    setFormulario({
+      cliente_id: item.cliente_id ? String(item.cliente_id) : "",
+      contrato_id: item.contrato_id ? String(item.contrato_id) : "",
+      tipo_recebimento: item.tipo_recebimento || "Aluguel mensal",
+      numero_contrato: item.numero_contrato || "",
+      descricao: item.descricao || "",
+      valor: item.valor ?? "",
+      data_vencimento: item.data_vencimento || "",
+      forma_pagamento: item.forma_pagamento || "Pix",
+      status: item.status || "Pendente",
+      observacoes: item.observacoes || "",
+    })
+    setNovoAberto(true)
+  }
+
   function fecharNovo() {
     if (salvando) return
 
     setNovoAberto(false)
+    setRecebimentoEditando(null)
     setFormulario(
       formularioVazio()
     )
@@ -407,19 +430,27 @@ export default function Recebimentos() {
           formulario.observacoes || null,
       }
 
-      const { error } = await supabase
-        .from("recebimentos")
-        .insert([dados])
+      const resultado = recebimentoEditando
+        ? await supabase
+            .from("recebimentos")
+            .update(dados)
+            .eq("id", recebimentoEditando.id)
+        : await supabase
+            .from("recebimentos")
+            .insert([dados])
 
-      if (error) {
-        throw error
+      if (resultado.error) {
+        throw resultado.error
       }
 
       setSucesso(
-        "Recebimento cadastrado com sucesso."
+        recebimentoEditando
+          ? "Recebimento atualizado com sucesso."
+          : "Recebimento cadastrado com sucesso."
       )
 
       setNovoAberto(false)
+      setRecebimentoEditando(null)
 
       setFormulario(
         formularioVazio()
@@ -1026,6 +1057,14 @@ export default function Recebimentos() {
 
                           <div className="d-flex justify-content-end gap-2">
 
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() => abrirEdicao(item)}
+                            >
+                              Editar
+                            </button>
+
                             {String(
                               item.status || ""
                             ).toLowerCase() ===
@@ -1099,11 +1138,15 @@ export default function Recebimentos() {
                 <div>
 
                   <h2 className="modal-title h5 fw-bold mb-1">
-                    Novo recebimento
+                    {recebimentoEditando
+                      ? "Editar recebimento"
+                      : "Novo recebimento"}
                   </h2>
 
                   <p className="text-muted small mb-0">
-                    Cadastre um novo recebimento.
+                    {recebimentoEditando
+                      ? "Atualize os dados do recebimento."
+                      : "Cadastre um novo recebimento."}
                   </p>
 
                 </div>
@@ -1483,7 +1526,9 @@ export default function Recebimentos() {
                 >
                   {salvando
                     ? "Salvando..."
-                    : "Salvar recebimento"}
+                    : recebimentoEditando
+                      ? "Salvar alterações"
+                      : "Salvar recebimento"}
                 </button>
 
               </div>
