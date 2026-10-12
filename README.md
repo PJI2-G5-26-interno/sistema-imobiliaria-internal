@@ -209,7 +209,7 @@ As variáveis de ambiente utilizadas no projeto incluem:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 
-O arquivo ".env.local" deve permanecer fora do repositório.
+O arquivo ".env.local" deve permanecer fora do repositório e no gitignore.
 
 ---
 
