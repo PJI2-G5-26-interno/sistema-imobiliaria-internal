@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import { obterSituacaoImovel } from "../../lib/imoveis"
 
 export default function Dashboard() {
   const [clientes, setClientes] = useState([])
@@ -164,21 +165,11 @@ export default function Dashboard() {
       return contratosAtivos.length
     }
 
-    return imoveis.filter((imovel) => {
-      const status = String(
-        imovel.status ||
-          imovel.situacao ||
-          imovel.estado ||
-          ""
-      ).toLowerCase()
-
-      return (
-        status.includes("alugado") ||
-        status.includes("ocupado") ||
-        status.includes("locado")
-      )
-    }).length
-  }, [imoveis, contratosAtivos])
+    return imoveis.filter(
+      (imovel) =>
+        obterSituacaoImovel(imovel, contratos).ocupacao === "alugado"
+    ).length
+  }, [imoveis, contratosAtivos, contratos])
 
   const imoveisDisponiveis = useMemo(() => {
     if (imoveis.length === 0) {
@@ -186,39 +177,21 @@ export default function Dashboard() {
     }
 
     return imoveis.filter((imovel) => {
-      const status = String(
-        imovel.status ||
-          imovel.situacao ||
-          imovel.estado ||
-          ""
-      ).toLowerCase()
-
-      return (
-        status.includes("dispon") ||
-        status.includes("livre")
-      )
+      const situacao = obterSituacaoImovel(imovel, contratos)
+      return situacao.ocupacao === "disponivel" && !situacao.emManutencao
     }).length
-  }, [imoveis])
+  }, [imoveis, contratos])
 
   const imoveisManutencao = useMemo(() => {
     if (imoveis.length === 0) {
       return 0
     }
 
-    return imoveis.filter((imovel) => {
-      const status = String(
-        imovel.status ||
-          imovel.situacao ||
-          imovel.estado ||
-          ""
-      ).toLowerCase()
-
-      return (
-        status.includes("manuten") ||
-        status.includes("reparo")
-      )
-    }).length
-  }, [imoveis])
+    return imoveis.filter(
+      (imovel) =>
+        obterSituacaoImovel(imovel, contratos).emManutencao
+    ).length
+  }, [imoveis, contratos])
   const totalImoveis = useMemo(() => {
     return imoveis.length
   }, [imoveis])
