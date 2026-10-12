@@ -1,4 +1,3 @@
-
 🏠 Sistema de Gestão Imobiliária
 
 Sistema web para gestão e administração de imóveis, desenvolvido para centralizar informações de imóveis, clientes, contratos e movimentações financeiras em uma única plataforma.
@@ -360,5 +359,6 @@ Gestão da Tecnologia da Informação — UNIVESP
 📄 Licença
 
 Este projeto foi desenvolvido para fins acadêmicos e de desenvolvimento de portfólio.
+
 
 © 2026 Mariane Isabela Striani Silva
