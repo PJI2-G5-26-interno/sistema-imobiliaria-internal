@@ -63,3 +63,37 @@ test("a migration torna opcionais os campos fora das planilhas", () => {
   assert.match(migration, /contratos[\s\S]*alter column numero drop not null/i)
   assert.match(migration, /despesas[\s\S]*alter column categoria drop not null/i)
 })
+
+test("a migration automatiza códigos e sincroniza contratos e recebimentos", () => {
+  const migration = fs.readFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "supabase",
+      "migrations",
+      "20261011160000_codigos_contratos_e_recebimentos.sql"
+    ),
+    "utf8"
+  )
+
+  assert.match(migration, /gerar_numero_contrato/i)
+  assert.match(migration, /create unique index[\s\S]*contratos_numero_key/i)
+  assert.match(migration, /sync_recebimento_contrato/i)
+})
+
+test("a migration separada rege manutenção e sobreposição de contratos", () => {
+  const migration = fs.readFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "supabase",
+      "migrations",
+      "20261011170000_status_imoveis_e_contratos.sql"
+    ),
+    "utf8"
+  )
+
+  assert.match(migration, /validar_disponibilidade_contrato/i)
+  assert.match(migration, /add column if not exists em_manutencao/i)
+  assert.match(migration, /add column if not exists tipo_outro/i)
+})

@@ -57,6 +57,18 @@ export default function Recebimentos() {
     observacoes: "",
   })
 
+  const contratosDoCliente = useMemo(() => {
+    if (!formulario.cliente_id) {
+      return contratos
+    }
+
+    return contratos.filter(
+      (contrato) =>
+        String(contrato.cliente_id) ===
+        String(formulario.cliente_id)
+    )
+  }, [contratos, formulario.cliente_id])
+
   async function carregarDados() {
     try {
       setLoading(true)
@@ -400,6 +412,26 @@ export default function Recebimentos() {
         return
       }
 
+      if (!formulario.contrato_id) {
+        setErro("Selecione um contrato.")
+        return
+      }
+
+      const contratoSelecionado = contratos.find(
+        (contrato) =>
+          String(contrato.id) ===
+          String(formulario.contrato_id)
+      )
+
+      if (
+        !contratoSelecionado ||
+        String(contratoSelecionado.cliente_id) !==
+          String(formulario.cliente_id)
+      ) {
+        setErro("Selecione um contrato pertencente ao cliente informado.")
+        return
+      }
+
       if (!formulario.valor) {
         setErro("Informe o valor do recebimento.")
         return
@@ -411,13 +443,12 @@ export default function Recebimentos() {
       }
 
       const dados = {
-        cliente_id: formulario.cliente_id,
-        contrato_id:
-          formulario.contrato_id || null,
+        cliente_id: contratoSelecionado.cliente_id,
+        contrato_id: contratoSelecionado.id,
         tipo_recebimento:
           formulario.tipo_recebimento,
         numero_contrato:
-          formulario.numero_contrato || null,
+          contratoSelecionado.numero || null,
         descricao:
           formulario.descricao || null,
         valor: Number(formulario.valor),
@@ -1163,6 +1194,12 @@ export default function Recebimentos() {
 
               <div className="modal-body">
 
+                {erro && (
+                  <div className="alert alert-danger" role="alert">
+                    {erro}
+                  </div>
+                )}
+
                 <div className="row g-3">
 
                   <div className="col-12 col-md-6">
@@ -1180,12 +1217,33 @@ export default function Recebimentos() {
                       value={
                         formulario.cliente_id
                       }
-                      onChange={(event) =>
-                        alterarFormulario(
-                          "cliente_id",
-                          event.target.value
-                        )
-                      }
+                      required
+                      onChange={(event) => {
+                        const clienteId = event.target.value
+                        setFormulario((anterior) => {
+                          const contratoAtual = contratos.find(
+                            (contrato) =>
+                              String(contrato.id) ===
+                              String(anterior.contrato_id)
+                          )
+                          const contratoCompativel =
+                            contratoAtual &&
+                            String(contratoAtual.cliente_id) ===
+                              String(clienteId)
+
+                          return {
+                            ...anterior,
+                            cliente_id: clienteId,
+                            contrato_id: contratoCompativel
+                              ? anterior.contrato_id
+                              : "",
+                            numero_contrato: contratoCompativel
+                              ? anterior.numero_contrato
+                              : "",
+                          }
+                        })
+                        setErro("")
+                      }}
                     >
 
                       <option value="">
@@ -1222,6 +1280,7 @@ export default function Recebimentos() {
                       value={
                         formulario.contrato_id
                       }
+                      required
                       onChange={(event) => {
 
                         const contratoId =
@@ -1243,11 +1302,15 @@ export default function Recebimentos() {
                             ...anterior,
                             contrato_id:
                               contratoId,
+                            cliente_id: contrato?.cliente_id
+                              ? String(contrato.cliente_id)
+                              : anterior.cliente_id,
                             numero_contrato:
                               contrato?.numero ||
                               "",
                           })
                         )
+                        setErro("")
                       }}
                     >
 
@@ -1255,19 +1318,26 @@ export default function Recebimentos() {
                         Selecione o contrato
                       </option>
 
-                      {contratos.map(
+                      {contratosDoCliente.map(
                         (contrato) => (
                           <option
                             key={contrato.id}
                             value={contrato.id}
                           >
                             {contrato.numero ||
-                              `Contrato #${contrato.id}`}
+                              `Contrato #${contrato.id}`} - {nomeCliente(contrato.cliente_id)}
                           </option>
                         )
                       )}
 
                     </select>
+
+                    {formulario.cliente_id &&
+                      contratosDoCliente.length === 0 && (
+                        <div className="form-text text-danger">
+                          Este cliente ainda não possui contratos cadastrados.
+                        </div>
+                      )}
 
                   </div>
 
