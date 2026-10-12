@@ -326,7 +326,7 @@ Fluxo de uma alteração:
 4. Abra o pull request de `develop` para `main`. Os mesmos checks rodam de novo.
 5. O merge em `main` atualiza a produção.
 
-O banco é o projeto Supabase `krpbozqmhojrciguubyd`, na região sa-east-1. Mudança de schema entra como arquivo novo em `supabase/migrations` e é aplicada com `npx supabase db push` antes do merge que depende dela. O login da aplicação procura o administrador pelo nome.
+O banco usado pela aplicação é o projeto Supabase `krpbozqmhojrciguubyd`. Mudança de schema entra como arquivo novo em `supabase/migrations`. Depois do merge em `develop` ou `main`, o workflow Migrações aplica o SQL nesse projeto. Os segredos `SUPABASE_ACCESS_TOKEN` e `SUPABASE_DB_PASSWORD` ficam apenas no environment `supabase` do GitHub. A chave publicável não aplica migration. O login da aplicação procura o administrador pelo nome.
 
 ---
 
