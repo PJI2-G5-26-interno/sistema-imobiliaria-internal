@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../../lib/supabase"
 import { formatarCpf, formatarTelefone } from "../../lib/formatacao"
+import {
+  obterCamposObrigatoriosPendentes,
+  mensagemCamposObrigatorios,
+} from "../../lib/validacao"
 export default function Clientes() {
   const [clientes, setClientes] = useState([])
 
@@ -14,6 +18,7 @@ export default function Clientes() {
   const [busca, setBusca] = useState("")
   const [modalAberto, setModalAberto] = useState(false)
   const [editando, setEditando] = useState(null)
+  const [camposInvalidos, setCamposInvalidos] = useState([])
 
   const hoje = new Date()
 
@@ -73,6 +78,7 @@ export default function Clientes() {
       telefone: "",
       email: "",
     })
+    setCamposInvalidos([])
 
     setModalAberto(true)
   }
@@ -90,6 +96,7 @@ export default function Clientes() {
       email: cliente.email || "",
     })
 
+    setCamposInvalidos([])
     setModalAberto(true)
   }
 
@@ -98,6 +105,7 @@ export default function Clientes() {
 
     setModalAberto(false)
     setEditando(null)
+    setCamposInvalidos([])
   }
 
   function alterarCampo(campo, valor) {
@@ -105,6 +113,10 @@ export default function Clientes() {
       ...anterior,
       [campo]: valor,
     }))
+    setCamposInvalidos((anteriores) =>
+      anteriores.filter((id) => id !== campo)
+    )
+    setErro("")
   }
 
   const clientesFiltrados = useMemo(() => {
@@ -145,13 +157,13 @@ export default function Clientes() {
 
     limparMensagens()
 
-    if (!form.nome.trim()) {
-      setErro("Informe o nome do cliente.")
-      return
-    }
+    const camposPendentes = obterCamposObrigatoriosPendentes(
+      e.currentTarget
+    )
+    setCamposInvalidos(camposPendentes.map((campo) => campo.id))
 
-    if (!form.telefone.trim()) {
-      setErro("Informe o telefone do cliente.")
+    if (camposPendentes.length > 0) {
+      setErro(mensagemCamposObrigatorios(camposPendentes))
       return
     }
 
@@ -300,7 +312,7 @@ export default function Clientes() {
       </div>
 
       {/* MENSAGEM DE ERRO */}
-      {erro && (
+      {erro && !modalAberto && (
         <div
           className="alert alert-danger alert-dismissible fade show"
           role="alert"
@@ -715,9 +727,15 @@ export default function Clientes() {
               </div>
 
               {/* FORMULÁRIO */}
-              <form onSubmit={salvarCliente}>
+              <form onSubmit={salvarCliente} noValidate>
 
                 <div className="modal-body">
+
+                  {erro && (
+                    <div className="alert alert-danger" role="alert" aria-live="assertive">
+                      {erro}
+                    </div>
+                  )}
 
                   <div className="row g-3">
 
@@ -728,13 +746,13 @@ export default function Clientes() {
                         htmlFor="nome"
                         className="form-label fw-semibold"
                       >
-                        Nome completo
+                        Nome completo <span className="text-danger" aria-hidden="true">*</span>
                       </label>
 
                       <input
                         id="nome"
                         type="text"
-                        className="form-control"
+                        className={`form-control ${camposInvalidos.includes("nome") ? "is-invalid" : ""}`}
                         value={form.nome}
                         onChange={(e) =>
                           alterarCampo(
@@ -745,6 +763,11 @@ export default function Clientes() {
                         placeholder="Digite o nome completo"
                         required
                       />
+                      {camposInvalidos.includes("nome") && (
+                        <div className="invalid-feedback d-block">
+                          Informe o nome completo.
+                        </div>
+                      )}
 
                     </div>
 
@@ -807,13 +830,13 @@ export default function Clientes() {
                         htmlFor="telefone"
                         className="form-label fw-semibold"
                       >
-                        Telefone
+                        Telefone <span className="text-danger" aria-hidden="true">*</span>
                       </label>
 
                       <input
                         id="telefone"
                         type="text"
-                        className="form-control"
+                        className={`form-control ${camposInvalidos.includes("telefone") ? "is-invalid" : ""}`}
                         value={form.telefone}
                         onChange={(e) =>
                           alterarCampo(
@@ -824,6 +847,11 @@ export default function Clientes() {
                         placeholder="Digite o telefone"
                         required
                       />
+                      {camposInvalidos.includes("telefone") && (
+                        <div className="invalid-feedback d-block">
+                          Informe o telefone.
+                        </div>
+                      )}
 
                     </div>
 
@@ -840,7 +868,7 @@ export default function Clientes() {
                       <input
                         id="email"
                         type="email"
-                        className="form-control"
+                        className={`form-control ${camposInvalidos.includes("email") ? "is-invalid" : ""}`}
                         value={form.email}
                         onChange={(e) =>
                           alterarCampo(
@@ -850,6 +878,11 @@ export default function Clientes() {
                         }
                         placeholder="Digite o e-mail"
                       />
+                      {camposInvalidos.includes("email") && (
+                        <div className="invalid-feedback d-block">
+                          Informe um e-mail válido.
+                        </div>
+                      )}
 
                     </div>
 
