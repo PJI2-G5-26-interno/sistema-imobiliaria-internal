@@ -35,6 +35,9 @@ export default function Recebimentos() {
   const [selecionado, setSelecionado] =
     useState(null)
 
+  const [recebimentoEditando, setRecebimentoEditando] =
+    useState(null)
+
   const [formaPagamento, setFormaPagamento] =
     useState("")
 
@@ -53,6 +56,18 @@ export default function Recebimentos() {
     status: "Pendente",
     observacoes: "",
   })
+
+  const contratosDoCliente = useMemo(() => {
+    if (!formulario.cliente_id) {
+      return contratos
+    }
+
+    return contratos.filter(
+      (contrato) =>
+        String(contrato.cliente_id) ===
+        String(formulario.cliente_id)
+    )
+  }, [contratos, formulario.cliente_id])
 
   async function carregarDados() {
     try {
@@ -324,6 +339,7 @@ export default function Recebimentos() {
 
   function abrirNovo() {
     limparMensagens()
+    setRecebimentoEditando(null)
 
     setFormulario(
       formularioVazio()
@@ -332,10 +348,29 @@ export default function Recebimentos() {
     setNovoAberto(true)
   }
 
+  function abrirEdicao(item) {
+    limparMensagens()
+    setRecebimentoEditando(item)
+    setFormulario({
+      cliente_id: item.cliente_id ? String(item.cliente_id) : "",
+      contrato_id: item.contrato_id ? String(item.contrato_id) : "",
+      tipo_recebimento: item.tipo_recebimento || "Aluguel mensal",
+      numero_contrato: item.numero_contrato || "",
+      descricao: item.descricao || "",
+      valor: item.valor ?? "",
+      data_vencimento: item.data_vencimento || "",
+      forma_pagamento: item.forma_pagamento || "Pix",
+      status: item.status || "Pendente",
+      observacoes: item.observacoes || "",
+    })
+    setNovoAberto(true)
+  }
+
   function fecharNovo() {
     if (salvando) return
 
     setNovoAberto(false)
+    setRecebimentoEditando(null)
     setFormulario(
       formularioVazio()
     )
@@ -377,6 +412,26 @@ export default function Recebimentos() {
         return
       }
 
+      if (!formulario.contrato_id) {
+        setErro("Selecione um contrato.")
+        return
+      }
+
+      const contratoSelecionado = contratos.find(
+        (contrato) =>
+          String(contrato.id) ===
+          String(formulario.contrato_id)
+      )
+
+      if (
+        !contratoSelecionado ||
+        String(contratoSelecionado.cliente_id) !==
+          String(formulario.cliente_id)
+      ) {
+        setErro("Selecione um contrato pertencente ao cliente informado.")
+        return
+      }
+
       if (!formulario.valor) {
         setErro("Informe o valor do recebimento.")
         return
@@ -388,13 +443,12 @@ export default function Recebimentos() {
       }
 
       const dados = {
-        cliente_id: formulario.cliente_id,
-        contrato_id:
-          formulario.contrato_id || null,
+        cliente_id: contratoSelecionado.cliente_id,
+        contrato_id: contratoSelecionado.id,
         tipo_recebimento:
           formulario.tipo_recebimento,
         numero_contrato:
-          formulario.numero_contrato || null,
+          contratoSelecionado.numero || null,
         descricao:
           formulario.descricao || null,
         valor: Number(formulario.valor),
@@ -407,19 +461,27 @@ export default function Recebimentos() {
           formulario.observacoes || null,
       }
 
-      const { error } = await supabase
-        .from("recebimentos")
-        .insert([dados])
+      const resultado = recebimentoEditando
+        ? await supabase
+            .from("recebimentos")
+            .update(dados)
+            .eq("id", recebimentoEditando.id)
+        : await supabase
+            .from("recebimentos")
+            .insert([dados])
 
-      if (error) {
-        throw error
+      if (resultado.error) {
+        throw resultado.error
       }
 
       setSucesso(
-        "Recebimento cadastrado com sucesso."
+        recebimentoEditando
+          ? "Recebimento atualizado com sucesso."
+          : "Recebimento cadastrado com sucesso."
       )
 
       setNovoAberto(false)
+      setRecebimentoEditando(null)
 
       setFormulario(
         formularioVazio()
@@ -1026,6 +1088,14 @@ export default function Recebimentos() {
 
                           <div className="d-flex justify-content-end gap-2">
 
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() => abrirEdicao(item)}
+                            >
+                              Editar
+                            </button>
+
                             {String(
                               item.status || ""
                             ).toLowerCase() ===
@@ -1099,11 +1169,15 @@ export default function Recebimentos() {
                 <div>
 
                   <h2 className="modal-title h5 fw-bold mb-1">
-                    Novo recebimento
+                    {recebimentoEditando
+                      ? "Editar recebimento"
+                      : "Novo recebimento"}
                   </h2>
 
                   <p className="text-muted small mb-0">
-                    Cadastre um novo recebimento.
+                    {recebimentoEditando
+                      ? "Atualize os dados do recebimento."
+                      : "Cadastre um novo recebimento."}
                   </p>
 
                 </div>
@@ -1119,6 +1193,12 @@ export default function Recebimentos() {
               </div>
 
               <div className="modal-body">
+
+                {erro && (
+                  <div className="alert alert-danger" role="alert">
+                    {erro}
+                  </div>
+                )}
 
                 <div className="row g-3">
 
@@ -1137,12 +1217,33 @@ export default function Recebimentos() {
                       value={
                         formulario.cliente_id
                       }
-                      onChange={(event) =>
-                        alterarFormulario(
-                          "cliente_id",
-                          event.target.value
-                        )
-                      }
+                      required
+                      onChange={(event) => {
+                        const clienteId = event.target.value
+                        setFormulario((anterior) => {
+                          const contratoAtual = contratos.find(
+                            (contrato) =>
+                              String(contrato.id) ===
+                              String(anterior.contrato_id)
+                          )
+                          const contratoCompativel =
+                            contratoAtual &&
+                            String(contratoAtual.cliente_id) ===
+                              String(clienteId)
+
+                          return {
+                            ...anterior,
+                            cliente_id: clienteId,
+                            contrato_id: contratoCompativel
+                              ? anterior.contrato_id
+                              : "",
+                            numero_contrato: contratoCompativel
+                              ? anterior.numero_contrato
+                              : "",
+                          }
+                        })
+                        setErro("")
+                      }}
                     >
 
                       <option value="">
@@ -1179,6 +1280,7 @@ export default function Recebimentos() {
                       value={
                         formulario.contrato_id
                       }
+                      required
                       onChange={(event) => {
 
                         const contratoId =
@@ -1200,11 +1302,15 @@ export default function Recebimentos() {
                             ...anterior,
                             contrato_id:
                               contratoId,
+                            cliente_id: contrato?.cliente_id
+                              ? String(contrato.cliente_id)
+                              : anterior.cliente_id,
                             numero_contrato:
                               contrato?.numero ||
                               "",
                           })
                         )
+                        setErro("")
                       }}
                     >
 
@@ -1212,19 +1318,26 @@ export default function Recebimentos() {
                         Selecione o contrato
                       </option>
 
-                      {contratos.map(
+                      {contratosDoCliente.map(
                         (contrato) => (
                           <option
                             key={contrato.id}
                             value={contrato.id}
                           >
                             {contrato.numero ||
-                              `Contrato #${contrato.id}`}
+                              `Contrato #${contrato.id}`} - {nomeCliente(contrato.cliente_id)}
                           </option>
                         )
                       )}
 
                     </select>
+
+                    {formulario.cliente_id &&
+                      contratosDoCliente.length === 0 && (
+                        <div className="form-text text-danger">
+                          Este cliente ainda não possui contratos cadastrados.
+                        </div>
+                      )}
 
                   </div>
 
@@ -1483,7 +1596,9 @@ export default function Recebimentos() {
                 >
                   {salvando
                     ? "Salvando..."
-                    : "Salvar recebimento"}
+                    : recebimentoEditando
+                      ? "Salvar alterações"
+                      : "Salvar recebimento"}
                 </button>
 
               </div>

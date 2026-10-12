@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import {
+  obterCamposObrigatoriosPendentes,
+  mensagemCamposObrigatorios,
+} from "../../lib/validacao"
 export default function Contratos() {
   // ========================================
   // DADOS
@@ -38,16 +42,18 @@ export default function Contratos() {
 
   const [contratoSelecionado, setContratoSelecionado] =
     useState(null)
+  const [contratoVisualizando, setContratoVisualizando] =
+    useState(null)
+  const [camposInvalidos, setCamposInvalidos] = useState([])
 
   // ========================================
   // FORMULÁRIO
   // ========================================
 
   const formularioInicial = {
-    numero: "",
     cliente: "",
     imovel: "",
-    tipo: "Aluguel",
+    tipo: "",
     status: "ativo",
     data_inicio: "",
     data_fim: "",
@@ -217,12 +223,14 @@ export default function Contratos() {
     campo,
     valor
   ) {
-    setFormulario(
-      (anterior) => ({
-        ...anterior,
-        [campo]: valor,
-      })
+    setFormulario((anterior) => ({
+      ...anterior,
+      [campo]: valor,
+    }))
+    setCamposInvalidos((anteriores) =>
+      anteriores.filter((id) => id !== campo)
     )
+    setErro("")
   }
 
   // ========================================
@@ -239,6 +247,7 @@ export default function Contratos() {
     setFormulario(
       formularioInicial
     )
+    setCamposInvalidos([])
 
     setModalAberto(true)
   }
@@ -257,9 +266,6 @@ export default function Contratos() {
     )
 
     setFormulario({
-      numero:
-        contrato.numero || "",
-
       cliente:
         contrato.cliente || "",
 
@@ -282,6 +288,7 @@ export default function Contratos() {
         contrato.valor ?? "",
     })
 
+    setCamposInvalidos([])
     setModalAberto(true)
   }
 
@@ -299,6 +306,7 @@ export default function Contratos() {
     setModoEdicao(false)
 
     setContratoSelecionado(null)
+    setCamposInvalidos([])
 
     setFormulario(
       formularioInicial
@@ -309,48 +317,74 @@ export default function Contratos() {
   // SALVAR CONTRATO
   // ========================================
 
-  async function salvarContrato() {
+  async function salvarContrato(event) {
+    event.preventDefault()
+
     try {
-      setSalvando(true)
       limparMensagens()
 
-      if (!formulario.numero) {
-        setErro(
-          "Informe o número do contrato."
-        )
+      const camposPendentes = obterCamposObrigatoriosPendentes(
+        event.currentTarget
+      )
+      setCamposInvalidos(camposPendentes.map((campo) => campo.id))
+
+      if (camposPendentes.length > 0) {
+        setErro(mensagemCamposObrigatorios(camposPendentes))
         return
       }
 
-      if (!formulario.cliente) {
-        setErro(
-          "Selecione um cliente."
-        )
+      if (
+        formulario.data_fim &&
+        formulario.data_fim < formulario.data_inicio
+      ) {
+        setCamposInvalidos(["data_fim"])
+        setErro("A data de fim não pode ser anterior à data de início.")
         return
       }
 
-      if (!formulario.imovel) {
-        setErro(
-          "Selecione um imóvel."
-        )
+      const imovelSelecionado = imoveis.find(
+        (imovel) => String(imovel.id) === String(formulario.imovel)
+      )
+      const mesmoContratoAtivo =
+        modoEdicao &&
+        contratoSelecionado?.status === "ativo" &&
+        String(
+          contratoSelecionado.imovel_id ?? contratoSelecionado.imovel
+        ) === String(formulario.imovel)
+
+      if (
+        formulario.status === "ativo" &&
+        imovelSelecionado?.em_manutencao &&
+        !mesmoContratoAtivo
+      ) {
+        setErro("Não é possível cadastrar contrato ativo para imóvel em manutenção.")
         return
       }
 
-      if (!formulario.data_inicio) {
-        setErro(
-          "Informe a data de início."
+      const inicioNovo = formulario.data_inicio || "0000-01-01"
+      const fimNovo = formulario.data_fim || "9999-12-31"
+      const conflito = contratos.some((contrato) => {
+        const imovelId = contrato.imovel_id ?? contrato.imovel
+        const inicioExistente = contrato.data_inicio || "0000-01-01"
+        const fimExistente = contrato.data_fim || "9999-12-31"
+
+        return (
+          contrato.status === "ativo" &&
+          String(contrato.id) !== String(contratoSelecionado?.id || "") &&
+          String(imovelId) === String(formulario.imovel) &&
+          inicioExistente <= fimNovo &&
+          inicioNovo <= fimExistente
         )
+      })
+
+      if (formulario.status === "ativo" && conflito) {
+        setErro("Já existe um contrato ativo para esse imóvel no período informado.")
         return
       }
 
-      if (!formulario.valor) {
-        setErro(
-          "Informe o valor do contrato."
-        )
-        return
-      }
+      setSalvando(true)
 
       const dados = {
-        numero: formulario.numero,
         cliente: formulario.cliente,
         imovel: formulario.imovel,
         tipo: formulario.tipo,
@@ -1123,6 +1157,16 @@ export default function Contratos() {
                           <div className="d-flex justify-content-end gap-1">
                             <button
                               type="button"
+                              className="btn btn-sm btn-outline-secondary"
+                              title="Ver contrato"
+                              onClick={() => setContratoVisualizando(contrato)}
+                            >
+                              <i className="bi bi-eye"></i>
+                              Ver
+                            </button>
+
+                            <button
+                              type="button"
                               className="btn btn-sm btn-outline-primary"
                               title="Editar contrato"
                               onClick={() =>
@@ -1195,6 +1239,7 @@ export default function Contratos() {
                 ></button>
               </div>
 
+              <form id="form-contrato" onSubmit={salvarContrato} noValidate>
               <div className="modal-body">
                 {erro && (
                   <div
@@ -1207,29 +1252,23 @@ export default function Contratos() {
                 )}
 
                 <div className="row g-3">
-                  {/* NÚMERO */}
+                  {/* CÓDIGO */}
 
                   <div className="col-12 col-md-6">
                     <label
-                      htmlFor="numero"
+                      htmlFor="codigo-contrato"
                       className="form-label fw-semibold"
                     >
-                      Nº do contrato
+                      Código do contrato
                     </label>
 
                     <input
-                      id="numero"
+                      id="codigo-contrato"
                       type="text"
-                      className="form-control"
-                      value={formulario.numero}
-                      onChange={(e) =>
-                        alterarFormulario(
-                          "numero",
-                          e.target.value
-                        )
-                      }
-                      placeholder="Ex.: CT-001"
-                      disabled={salvando}
+                      className="form-control bg-light"
+                      value={modoEdicao ? contratoSelecionado?.numero || "" : ""}
+                      placeholder="Gerado automaticamente ao salvar"
+                      readOnly
                     />
                   </div>
 
@@ -1240,12 +1279,13 @@ export default function Contratos() {
                       htmlFor="tipo"
                       className="form-label fw-semibold"
                     >
-                      Tipo
+                      Tipo <span className="text-danger" aria-hidden="true">*</span>
                     </label>
 
                     <select
                       id="tipo"
-                      className="form-select"
+                      className={`form-select ${camposInvalidos.includes("tipo") ? "is-invalid" : ""}`}
+                      required
                       value={formulario.tipo}
                       onChange={(e) =>
                         alterarFormulario(
@@ -1255,6 +1295,10 @@ export default function Contratos() {
                       }
                       disabled={salvando}
                     >
+                      <option value="">
+                        Selecione o tipo
+                      </option>
+
                       <option value="Aluguel">
                         Aluguel
                       </option>
@@ -1267,6 +1311,11 @@ export default function Contratos() {
                         Temporada
                       </option>
                     </select>
+                    {camposInvalidos.includes("tipo") && (
+                      <div className="invalid-feedback d-block">
+                        Selecione o tipo de contrato.
+                      </div>
+                    )}
                   </div>
 
                   {/* CLIENTE */}
@@ -1276,12 +1325,13 @@ export default function Contratos() {
                       htmlFor="cliente"
                       className="form-label fw-semibold"
                     >
-                      Cliente
+                      Cliente <span className="text-danger" aria-hidden="true">*</span>
                     </label>
 
                     <select
                       id="cliente"
-                      className="form-select"
+                      className={`form-select ${camposInvalidos.includes("cliente") ? "is-invalid" : ""}`}
+                      required
                       value={formulario.cliente}
                       onChange={(e) =>
                         alterarFormulario(
@@ -1306,6 +1356,11 @@ export default function Contratos() {
                         )
                       )}
                     </select>
+                    {camposInvalidos.includes("cliente") && (
+                      <div className="invalid-feedback d-block">
+                        Selecione um cliente.
+                      </div>
+                    )}
                   </div>
 
                   {/* IMÓVEL */}
@@ -1315,12 +1370,13 @@ export default function Contratos() {
                       htmlFor="imovel"
                       className="form-label fw-semibold"
                     >
-                      Imóvel
+                      Imóvel <span className="text-danger" aria-hidden="true">*</span>
                     </label>
 
                     <select
                       id="imovel"
-                      className="form-select"
+                      className={`form-select ${camposInvalidos.includes("imovel") ? "is-invalid" : ""}`}
+                      required
                       value={formulario.imovel}
                       onChange={(e) =>
                         alterarFormulario(
@@ -1347,6 +1403,11 @@ export default function Contratos() {
                         )
                       )}
                     </select>
+                    {camposInvalidos.includes("imovel") && (
+                      <div className="invalid-feedback d-block">
+                        Selecione um imóvel.
+                      </div>
+                    )}
                   </div>
                   {/* STATUS */}
 
@@ -1355,12 +1416,13 @@ export default function Contratos() {
                       htmlFor="status"
                       className="form-label fw-semibold"
                     >
-                      Status
+                      Status <span className="text-danger" aria-hidden="true">*</span>
                     </label>
 
                     <select
                       id="status"
-                      className="form-select"
+                      className={`form-select ${camposInvalidos.includes("status") ? "is-invalid" : ""}`}
+                      required
                       value={formulario.status}
                       onChange={(e) =>
                         alterarFormulario(
@@ -1395,13 +1457,13 @@ export default function Contratos() {
                       htmlFor="data_inicio"
                       className="form-label fw-semibold"
                     >
-                      Data de início
+                      Data de início <span className="text-danger" aria-hidden="true">*</span>
                     </label>
 
                     <input
                       id="data_inicio"
                       type="date"
-                      className="form-control"
+                      className={`form-control ${camposInvalidos.includes("data_inicio") ? "is-invalid" : ""}`}
                       value={
                         formulario.data_inicio
                       }
@@ -1412,7 +1474,13 @@ export default function Contratos() {
                         )
                       }
                       disabled={salvando}
+                      required
                     />
+                    {camposInvalidos.includes("data_inicio") && (
+                      <div className="invalid-feedback d-block">
+                        Informe a data de início.
+                      </div>
+                    )}
                   </div>
 
                   {/* DATA DE FIM */}
@@ -1428,7 +1496,7 @@ export default function Contratos() {
                     <input
                       id="data_fim"
                       type="date"
-                      className="form-control"
+                      className={`form-control ${camposInvalidos.includes("data_fim") ? "is-invalid" : ""}`}
                       value={
                         formulario.data_fim
                       }
@@ -1439,7 +1507,13 @@ export default function Contratos() {
                         )
                       }
                       disabled={salvando}
+                      min={formulario.data_inicio || undefined}
                     />
+                    {camposInvalidos.includes("data_fim") && (
+                      <div className="invalid-feedback d-block">
+                        A data de fim deve ser igual ou posterior à data de início.
+                      </div>
+                    )}
 
                     <div className="form-text">
                       Deixe em branco caso não tenha
@@ -1454,7 +1528,7 @@ export default function Contratos() {
                       htmlFor="valor"
                       className="form-label fw-semibold"
                     >
-                      Valor
+                      Valor <span className="text-danger" aria-hidden="true">*</span>
                     </label>
 
                     <div className="input-group">
@@ -1466,8 +1540,8 @@ export default function Contratos() {
                         id="valor"
                         type="number"
                         step="0.01"
-                        min="0"
-                        className="form-control"
+                        min="0.01"
+                        className={`form-control ${camposInvalidos.includes("valor") ? "is-invalid" : ""}`}
                         value={
                           formulario.valor
                         }
@@ -1479,11 +1553,18 @@ export default function Contratos() {
                         }
                         placeholder="0,00"
                         disabled={salvando}
+                        required
                       />
                     </div>
+                    {camposInvalidos.includes("valor") && (
+                      <div className="invalid-feedback d-block">
+                        Informe um valor maior que zero.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+              </form>
 
               {/* ==================================
                   RODAPÉ DO MODAL
@@ -1500,9 +1581,9 @@ export default function Contratos() {
                 </button>
 
                 <button
-                  type="button"
+                  type="submit"
                   className="btn btn-primary"
-                  onClick={salvarContrato}
+                  form="form-contrato"
                   disabled={salvando}
                 >
                   {salvando ? (
@@ -1524,6 +1605,79 @@ export default function Contratos() {
                         : "Cadastrar contrato"}
                     </>
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {contratoVisualizando && (
+        <div
+          className="modal fade show d-block"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="titulo-detalhe-contrato"
+          tabIndex={-1}
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+        >
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <div>
+                  <h2 id="titulo-detalhe-contrato" className="h5 modal-title fw-bold mb-1">
+                    Contrato {contratoVisualizando.numero}
+                  </h2>
+                  <p className="text-muted small mb-0">
+                    {obterNomeCliente(contratoVisualizando.cliente)} · {obterNomeImovel(contratoVisualizando.imovel)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Fechar detalhes do contrato"
+                  onClick={() => setContratoVisualizando(null)}
+                />
+              </div>
+              <div className="modal-body">
+                <dl className="row mb-0">
+                  <dt className="col-sm-4">Código</dt>
+                  <dd className="col-sm-8">{contratoVisualizando.numero}</dd>
+                  <dt className="col-sm-4">Cliente</dt>
+                  <dd className="col-sm-8">{obterNomeCliente(contratoVisualizando.cliente)}</dd>
+                  <dt className="col-sm-4">Imóvel</dt>
+                  <dd className="col-sm-8">{obterNomeImovel(contratoVisualizando.imovel)}</dd>
+                  <dt className="col-sm-4">Tipo e status</dt>
+                  <dd className="col-sm-8">
+                    {contratoVisualizando.tipo} · {obterTextoStatus(contratoVisualizando.status)}
+                  </dd>
+                  <dt className="col-sm-4">Período</dt>
+                  <dd className="col-sm-8">
+                    {formatarData(contratoVisualizando.data_inicio)} a {formatarData(contratoVisualizando.data_fim)}
+                  </dd>
+                  <dt className="col-sm-4">Valor</dt>
+                  <dd className="col-sm-8">{formatarMoeda(contratoVisualizando.valor)}</dd>
+                </dl>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => setContratoVisualizando(null)}
+                >
+                  Fechar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    const contrato = contratoVisualizando
+                    setContratoVisualizando(null)
+                    abrirEdicao(contrato)
+                  }}
+                >
+                  <i className="bi bi-pencil me-2" aria-hidden="true"></i>
+                  Editar
                 </button>
               </div>
             </div>

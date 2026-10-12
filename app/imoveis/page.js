@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import {
+  obterCamposObrigatoriosPendentes,
+  mensagemCamposObrigatorios,
+} from "../../lib/validacao"
+import { obterSituacaoImovel } from "../../lib/imoveis"
 
 const INFO_VAZIA = {
   nome_proprietario: "",
@@ -36,6 +41,7 @@ function rotuloStatus(status) {
 
 export default function Imoveis() {
   const [imoveis, setImoveis] = useState([])
+  const [contratos, setContratos] = useState([])
 
   const [loading, setLoading] = useState(true)
   const [salvando, setSalvando] = useState(false)
@@ -49,13 +55,14 @@ export default function Imoveis() {
   const [modalAberto, setModalAberto] = useState(false)
   const [visualizando, setVisualizando] = useState(null)
   const [editando, setEditando] = useState(null)
+  const [camposInvalidos, setCamposInvalidos] = useState([])
 
   const [form, setForm] = useState({
-    codigo: "",
     titulo: "",
-    tipo: "Casa",
-    finalidade: "Aluguel",
-    status: "disponivel",
+    tipo: "",
+    tipo_outro: "",
+    finalidade: "",
+    em_manutencao: false,
     valor: "",
 
     endereco: "",
@@ -76,18 +83,26 @@ export default function Imoveis() {
     setErro("")
 
     try {
-      const { data, error } = await supabase
-        .from("imoveis")
-        .select("*, informacoes_adicionais_imoveis(*)")
-        .order("id", {
-          ascending: false,
-        })
+      const [imoveisResult, contratosResult] = await Promise.all([
+        supabase
+          .from("imoveis")
+          .select("*, informacoes_adicionais_imoveis(*)")
+          .order("id", { ascending: false }),
+        supabase
+          .from("contratos")
+          .select("id, imovel_id, status, data_inicio, data_fim"),
+      ])
 
-      if (error) {
-        throw error
+      if (imoveisResult.error) {
+        throw imoveisResult.error
       }
 
-      setImoveis(data || [])
+      if (contratosResult.error) {
+        throw contratosResult.error
+      }
+
+      setImoveis(imoveisResult.data || [])
+      setContratos(contratosResult.data || [])
     } catch (error) {
       console.error(
         "Erro ao carregar imóveis:",
@@ -140,11 +155,11 @@ export default function Imoveis() {
 
   function formularioInicial() {
     return {
-      codigo: "",
       titulo: "",
-      tipo: "Casa",
-      finalidade: "Aluguel",
-      status: "disponivel",
+      tipo: "",
+      tipo_outro: "",
+      finalidade: "",
+      em_manutencao: false,
       valor: "",
 
       endereco: "",
@@ -214,6 +229,11 @@ export default function Imoveis() {
           dados.uf ||
           anterior.estado,
       }))
+      setCamposInvalidos((anteriores) =>
+        anteriores.filter(
+          (id) => !["endereco", "bairro", "cidade", "estado"].includes(id)
+        )
+      )
     } catch (error) {
       console.error(
         "Erro ao consultar CEP:",
@@ -232,6 +252,7 @@ export default function Imoveis() {
 
     setEditando(null)
     setForm(formularioInicial())
+    setCamposInvalidos([])
 
     setModalAberto(true)
   }
@@ -244,13 +265,11 @@ export default function Imoveis() {
     setEditando(imovel)
 
     setForm({
-      codigo: imovel.codigo || "",
       titulo: imovel.titulo || "",
-      tipo: imovel.tipo || "Casa",
-      finalidade:
-        imovel.finalidade || "Aluguel",
-      status:
-        imovel.status || "disponivel",
+      tipo: imovel.tipo || "",
+      tipo_outro: imovel.tipo_outro || "",
+      finalidade: imovel.finalidade || "",
+      em_manutencao: Boolean(imovel.em_manutencao),
       valor:
         imovel.valor ?? "",
 
@@ -287,6 +306,7 @@ export default function Imoveis() {
         info.codigo_iptu || "",
     })
 
+    setCamposInvalidos([])
     setModalAberto(true)
   }
 
@@ -298,6 +318,7 @@ export default function Imoveis() {
     setModalAberto(false)
     setEditando(null)
     setForm(formularioInicial())
+    setCamposInvalidos([])
     limparMensagens()
   }
 
@@ -305,24 +326,37 @@ export default function Imoveis() {
     e.preventDefault()
 
     limparMensagens()
+
+    const camposPendentes = obterCamposObrigatoriosPendentes(
+      e.currentTarget
+    )
+    setCamposInvalidos(camposPendentes.map((campo) => campo.id))
+
+    if (camposPendentes.length > 0) {
+      setErro(mensagemCamposObrigatorios(camposPendentes))
+      return
+    }
+
     setSalvando(true)
 
     try {
       const dados = {
-        codigo:
-          form.codigo?.trim() || null,
-
         titulo:
           form.titulo?.trim() || null,
 
         tipo:
-          form.tipo || "Casa",
+          form.tipo,
+
+        tipo_outro:
+          form.tipo === "Outro"
+            ? form.tipo_outro?.trim() || null
+            : null,
 
         finalidade:
-          form.finalidade || "Aluguel",
+          form.finalidade,
 
-        status:
-          form.status || "disponivel",
+        em_manutencao:
+          Boolean(form.em_manutencao),
 
         valor:
           form.valor === "" ||
@@ -516,11 +550,9 @@ export default function Imoveis() {
       .trim()
 
     return imoveis.filter((imovel) => {
+        const situacao = obterSituacaoImovel(imovel, contratos)
       const correspondeBusca =
         !texto ||
-        String(imovel.codigo || "")
-          .toLowerCase()
-          .includes(texto) ||
         String(imovel.titulo || "")
           .toLowerCase()
           .includes(texto) ||
@@ -562,7 +594,10 @@ export default function Imoveis() {
 
       const correspondeStatus =
         filtroStatus === "todos" ||
-        imovel.status === filtroStatus
+        (filtroStatus === "manutencao"
+          ? situacao.emManutencao
+          : situacao.ocupacao === filtroStatus &&
+            (filtroStatus !== "disponivel" || !situacao.emManutencao))
 
       return (
         (correspondeBusca || correspondeCodigos) &&
@@ -571,6 +606,7 @@ export default function Imoveis() {
     })
   }, [
     imoveis,
+    contratos,
     busca,
     filtroStatus,
   ])
@@ -578,18 +614,20 @@ export default function Imoveis() {
   const totalImoveis = imoveis.length
 
   const disponiveis = imoveis.filter(
-    (imovel) =>
-      imovel.status === "disponivel"
+    (imovel) => {
+      const situacao = obterSituacaoImovel(imovel, contratos)
+      return situacao.ocupacao === "disponivel" && !situacao.emManutencao
+    }
   ).length
 
   const alugados = imoveis.filter(
     (imovel) =>
-      imovel.status === "alugado"
+      obterSituacaoImovel(imovel, contratos).ocupacao === "alugado"
   ).length
 
   const manutencao = imoveis.filter(
     (imovel) =>
-      imovel.status === "manutencao"
+      obterSituacaoImovel(imovel, contratos).emManutencao
   ).length
 
   return (
@@ -636,7 +674,7 @@ export default function Imoveis() {
       </div>
 
       {/* MENSAGEM DE ERRO */}
-      {erro && (
+      {erro && !modalAberto && (
         <div
           className="alert alert-danger alert-dismissible fade show"
           role="alert"
@@ -847,7 +885,7 @@ export default function Imoveis() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Código, título, endereço, Elektro, Sabesp, hidrômetro ou IPTU..."
+                  placeholder="Nome, endereço, Elektro, Sabesp, hidrômetro ou IPTU..."
                   value={busca}
                   onChange={(e) => setBusca(e.target.value)}
                 />
@@ -955,7 +993,6 @@ export default function Imoveis() {
 
                 <thead className="table-light">
                   <tr>
-                    <th>Código</th>
                     <th>Imóvel</th>
                     <th>Tipo</th>
                     <th>Finalidade</th>
@@ -973,12 +1010,6 @@ export default function Imoveis() {
                   {imoveisFiltrados.map((imovel) => (
 
                     <tr key={imovel.id}>
-
-                      <td>
-                        <span className="fw-semibold text-nowrap">
-                          {imovel.codigo || "-"}
-                        </span>
-                      </td>
 
                       <td>
                         <div className="d-flex align-items-center">
@@ -1008,7 +1039,9 @@ export default function Imoveis() {
                       </td>
 
                       <td>
-                        {imovel.tipo || "-"}
+                        {imovel.tipo === "Outro" && imovel.tipo_outro
+                          ? `Outro: ${imovel.tipo_outro}`
+                          : imovel.tipo || "-"}
                       </td>
 
                       <td>
@@ -1043,33 +1076,24 @@ export default function Imoveis() {
                       </td>
 
                       <td>
-                        {imovel.status === "disponivel" && (
+                        {obterSituacaoImovel(imovel, contratos).ocupacao === "disponivel" && (
                           <span className="badge bg-success-subtle text-success">
                             Disponível
                           </span>
                         )}
 
-                        {imovel.status === "alugado" && (
+                        {obterSituacaoImovel(imovel, contratos).ocupacao === "alugado" && (
                           <span className="badge bg-primary-subtle text-primary">
                             Alugado
                           </span>
                         )}
 
-                        {imovel.status === "manutencao" && (
+                        {obterSituacaoImovel(imovel, contratos).emManutencao && (
                           <span className="badge bg-warning-subtle text-warning-emphasis">
                             Em manutenção
                           </span>
                         )}
 
-                        {![
-                          "disponivel",
-                          "alugado",
-                          "manutencao",
-                        ].includes(imovel.status) && (
-                          <span className="badge bg-secondary-subtle text-secondary">
-                            {imovel.status || "Não informado"}
-                          </span>
-                        )}
                       </td>
 
                       <td>
@@ -1112,9 +1136,7 @@ export default function Imoveis() {
                       </td>
 
                     </tr>
-
                   ))}
-
                 </tbody>
 
               </table>
@@ -1151,6 +1173,10 @@ export default function Imoveis() {
                       ? "Atualize os dados do imóvel."
                       : "Preencha os dados para cadastrar um novo imóvel."}
                   </small>
+                  <small className="d-block mt-1 text-muted">
+                    <span className="text-danger" aria-hidden="true">*</span>{" "}
+                    Campo obrigatório
+                  </small>
                 </div>
 
                 <button
@@ -1164,6 +1190,25 @@ export default function Imoveis() {
 
               {/* CORPO DO MODAL */}
               <div className="modal-body">
+
+                {erro && (
+                  <div
+                    className="alert alert-danger d-flex align-items-center gap-2"
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    <i className="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                    <span>{erro}</span>
+                    <button
+                      type="button"
+                      className="btn-close ms-auto"
+                      aria-label="Fechar mensagem de erro"
+                      onClick={() => setErro("")}
+                    />
+                  </div>
+                )}
+
+                <form id="form-imovel" onSubmit={salvarImovel} noValidate>
 
                 {/* DADOS PRINCIPAIS */}
                 <div className="card border-0 bg-light mb-4">
@@ -1193,33 +1238,14 @@ export default function Imoveis() {
 
                     <div className="row g-3">
 
-                      {/* CÓDIGO */}
-                      <div className="col-12 col-md-4">
-                        <label className="form-label fw-semibold">
-                          Código
-                        </label>
-
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={form.codigo}
-                          onChange={(e) =>
-                            alterarCampo(
-                              "codigo",
-                              e.target.value
-                            )
-                          }
-                          placeholder="Ex.: IM001"
-                        />
-                      </div>
-
                       {/* TÍTULO */}
                       <div className="col-12 col-md-8">
-                        <label className="form-label fw-semibold">
-                          Título
+                        <label htmlFor="titulo-imovel" className="form-label fw-semibold">
+                          Nome do imóvel
                         </label>
 
                         <input
+                          id="titulo-imovel"
                           type="text"
                           className="form-control"
                           value={form.titulo}
@@ -1230,18 +1256,19 @@ export default function Imoveis() {
                             )
                           }
                           placeholder="Ex.: Casa residencial"
-                          required
                         />
                       </div>
 
                       {/* TIPO */}
                       <div className="col-12 col-md-4">
-                        <label className="form-label fw-semibold">
-                          Tipo
+                        <label htmlFor="tipo" className="form-label fw-semibold">
+                          Tipo <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <select
-                          className="form-select"
+                          id="tipo"
+                          className={`form-select ${camposInvalidos.includes("tipo") ? "is-invalid" : ""}`}
+                          required
                           value={form.tipo}
                           onChange={(e) =>
                             alterarCampo(
@@ -1250,6 +1277,10 @@ export default function Imoveis() {
                             )
                           }
                         >
+                          <option value="">
+                            Selecione o tipo
+                          </option>
+
                           <option value="Casa">
                             Casa
                           </option>
@@ -1278,16 +1309,46 @@ export default function Imoveis() {
                             Outro
                           </option>
                         </select>
+                        {camposInvalidos.includes("tipo") && (
+                          <div className="invalid-feedback d-block">
+                            Selecione o tipo do imóvel.
+                          </div>
+                        )}
                       </div>
+
+                      {form.tipo === "Outro" && (
+                        <div className="col-12">
+                          <label htmlFor="tipo_outro" className="form-label fw-semibold">
+                            Descreva o tipo <span className="text-danger" aria-hidden="true">*</span>
+                          </label>
+                          <input
+                            id="tipo_outro"
+                            type="text"
+                            className={`form-control ${camposInvalidos.includes("tipo_outro") ? "is-invalid" : ""}`}
+                            value={form.tipo_outro}
+                            onChange={(event) =>
+                              alterarCampo("tipo_outro", event.target.value)
+                            }
+                            required
+                          />
+                          {camposInvalidos.includes("tipo_outro") && (
+                            <div className="invalid-feedback d-block">
+                              Descreva o tipo do imóvel.
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* FINALIDADE */}
                       <div className="col-12 col-md-4">
-                        <label className="form-label fw-semibold">
-                          Finalidade
+                        <label htmlFor="finalidade" className="form-label fw-semibold">
+                          Finalidade <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <select
-                          className="form-select"
+                          id="finalidade"
+                          className={`form-select ${camposInvalidos.includes("finalidade") ? "is-invalid" : ""}`}
+                          required
                           value={form.finalidade}
                           onChange={(e) =>
                             alterarCampo(
@@ -1296,6 +1357,10 @@ export default function Imoveis() {
                             )
                           }
                         >
+                          <option value="">
+                            Selecione a finalidade
+                          </option>
+
                           <option value="Aluguel">
                             Aluguel
                           </option>
@@ -1308,42 +1373,35 @@ export default function Imoveis() {
                             Aluguel e venda
                           </option>
                         </select>
+                        {camposInvalidos.includes("finalidade") && (
+                          <div className="invalid-feedback d-block">
+                            Selecione a finalidade do imóvel.
+                          </div>
+                        )}
                       </div>
 
-                      {/* STATUS */}
+                      {/* MANUTENÇÃO */}
                       <div className="col-12 col-md-4">
-                        <label className="form-label fw-semibold">
-                          Status
-                        </label>
-
-                        <select
-                          className="form-select"
-                          value={form.status}
-                          onChange={(e) =>
-                            alterarCampo(
-                              "status",
-                              e.target.value
-                            )
-                          }
-                        >
-                          <option value="disponivel">
-                            Disponível
-                          </option>
-
-                          <option value="alugado">
-                            Alugado
-                          </option>
-
-                          <option value="manutencao">
+                        <div className="form-check form-switch mt-4">
+                          <input
+                            id="em-manutencao"
+                            type="checkbox"
+                            className="form-check-input"
+                            checked={form.em_manutencao}
+                            onChange={(event) =>
+                              alterarCampo("em_manutencao", event.target.checked)
+                            }
+                          />
+                          <label htmlFor="em-manutencao" className="form-check-label fw-semibold">
                             Em manutenção
-                          </option>
-                        </select>
+                          </label>
+                        </div>
                       </div>
 
                       {/* VALOR */}
                       <div className="col-12 col-md-4">
-                        <label className="form-label fw-semibold">
-                          Valor
+                        <label htmlFor="valor" className="form-label fw-semibold">
+                          Valor <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <div className="input-group">
@@ -1352,8 +1410,9 @@ export default function Imoveis() {
                           </span>
 
                           <input
+                            id="valor"
                             type="number"
-                            className="form-control"
+                            className={`form-control ${camposInvalidos.includes("valor") ? "is-invalid" : ""}`}
                             value={form.valor}
                             onChange={(e) =>
                               alterarCampo(
@@ -1362,10 +1421,16 @@ export default function Imoveis() {
                               )
                             }
                             placeholder="0,00"
-                            min="0"
+                            min="0.01"
                             step="0.01"
+                            required
                           />
                         </div>
+                        {camposInvalidos.includes("valor") && (
+                          <div className="invalid-feedback d-block">
+                            Informe um valor maior que zero.
+                          </div>
+                        )}
                       </div>
 
                     </div>
@@ -1402,14 +1467,15 @@ export default function Imoveis() {
 
                       {/* CEP */}
                       <div className="col-12 col-md-4">
-                        <label className="form-label fw-semibold">
-                          CEP
+                        <label htmlFor="cep" className="form-label fw-semibold">
+                          CEP <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <div className="input-group">
                           <input
+                            id="cep"
                             type="text"
-                            className="form-control"
+                            className={`form-control ${camposInvalidos.includes("cep") ? "is-invalid" : ""}`}
                             value={form.cep}
                             onChange={(e) => {
                               const valor =
@@ -1436,6 +1502,7 @@ export default function Imoveis() {
                             }
                             placeholder="00000-000"
                             maxLength={9}
+                            required
                           />
 
                           <button
@@ -1449,17 +1516,23 @@ export default function Imoveis() {
                             <i className="bi bi-search"></i>
                           </button>
                         </div>
+                        {camposInvalidos.includes("cep") && (
+                          <div className="invalid-feedback d-block">
+                            Informe um CEP válido.
+                          </div>
+                        )}
                       </div>
 
                       {/* LOGRADOURO */}
                       <div className="col-12 col-md-8">
-                        <label className="form-label fw-semibold">
-                          Logradouro
+                        <label htmlFor="endereco" className="form-label fw-semibold">
+                          Logradouro <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <input
+                          id="endereco"
                           type="text"
-                          className="form-control"
+                          className={`form-control ${camposInvalidos.includes("endereco") ? "is-invalid" : ""}`}
                           value={form.endereco}
                           onChange={(e) =>
                             alterarCampo(
@@ -1468,7 +1541,13 @@ export default function Imoveis() {
                             )
                           }
                           placeholder="Rua, avenida, estrada..."
+                          required
                         />
+                        {camposInvalidos.includes("endereco") && (
+                          <div className="invalid-feedback d-block">
+                            Informe o logradouro.
+                          </div>
+                        )}
                       </div>
 
                       {/* NÚMERO */}
@@ -1513,13 +1592,14 @@ export default function Imoveis() {
 
                       {/* BAIRRO */}
                       <div className="col-12 col-md-4">
-                        <label className="form-label fw-semibold">
-                          Bairro
+                        <label htmlFor="bairro" className="form-label fw-semibold">
+                          Bairro <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <input
+                          id="bairro"
                           type="text"
-                          className="form-control"
+                          className={`form-control ${camposInvalidos.includes("bairro") ? "is-invalid" : ""}`}
                           value={form.bairro}
                           onChange={(e) =>
                             alterarCampo(
@@ -1528,18 +1608,25 @@ export default function Imoveis() {
                             )
                           }
                           placeholder="Bairro"
+                          required
                         />
+                        {camposInvalidos.includes("bairro") && (
+                          <div className="invalid-feedback d-block">
+                            Informe o bairro.
+                          </div>
+                        )}
                       </div>
 
                       {/* CIDADE */}
                       <div className="col-12 col-md-8">
-                        <label className="form-label fw-semibold">
-                          Cidade
+                        <label htmlFor="cidade" className="form-label fw-semibold">
+                          Cidade <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <input
+                          id="cidade"
                           type="text"
-                          className="form-control"
+                          className={`form-control ${camposInvalidos.includes("cidade") ? "is-invalid" : ""}`}
                           value={form.cidade}
                           onChange={(e) =>
                             alterarCampo(
@@ -1548,18 +1635,25 @@ export default function Imoveis() {
                             )
                           }
                           placeholder="Cidade"
+                          required
                         />
+                        {camposInvalidos.includes("cidade") && (
+                          <div className="invalid-feedback d-block">
+                            Informe a cidade.
+                          </div>
+                        )}
                       </div>
 
                       {/* UF */}
                       <div className="col-12 col-md-4">
-                        <label className="form-label fw-semibold">
-                          UF
+                        <label htmlFor="estado" className="form-label fw-semibold">
+                          UF <span className="text-danger" aria-hidden="true">*</span>
                         </label>
 
                         <input
+                          id="estado"
                           type="text"
-                          className="form-control"
+                          className={`form-control ${camposInvalidos.includes("estado") ? "is-invalid" : ""}`}
                           value={form.estado}
                           onChange={(e) =>
                             alterarCampo(
@@ -1571,7 +1665,16 @@ export default function Imoveis() {
                           }
                           placeholder="SP"
                           maxLength={2}
+                          minLength={2}
+                          pattern="[A-Z]{2}"
+                          title="Informe a sigla com duas letras."
+                          required
                         />
+                        {camposInvalidos.includes("estado") && (
+                          <div className="invalid-feedback d-block">
+                            Informe a UF com duas letras.
+                          </div>
+                        )}
                       </div>
 
                     </div>
@@ -1607,19 +1710,25 @@ export default function Imoveis() {
                     <div className="row g-3">
 
                       <div className="col-12 col-md-6">
-                        <label className="form-label fw-semibold" htmlFor="nome-proprietario">
-                          Nome do proprietário
+                        <label className="form-label fw-semibold" htmlFor="nome_proprietario">
+                          Nome do proprietário <span className="text-danger" aria-hidden="true">*</span>
                         </label>
                         <input
-                          id="nome-proprietario"
+                          id="nome_proprietario"
                           type="text"
-                          className="form-control"
+                          className={`form-control ${camposInvalidos.includes("nome_proprietario") ? "is-invalid" : ""}`}
                           value={form.nome_proprietario}
                           onChange={(e) =>
                             alterarCampo("nome_proprietario", e.target.value)
                           }
                           placeholder="Nome do proprietário"
+                          required
                         />
+                        {camposInvalidos.includes("nome_proprietario") && (
+                          <div className="invalid-feedback d-block">
+                            Informe o nome do proprietário.
+                          </div>
+                        )}
                       </div>
 
                       <div className="col-12 col-md-6">
@@ -1744,6 +1853,7 @@ export default function Imoveis() {
                   </div>
                 </div>
 
+                </form>
               </div>
 
               {/* RODAPÉ DO MODAL */}
@@ -1760,9 +1870,9 @@ export default function Imoveis() {
                 </button>
 
                 <button
-                  type="button"
+                  type="submit"
                   className="btn btn-primary"
-                  onClick={salvarImovel}
+                  form="form-imovel"
                   disabled={salvando}
                 >
                   {salvando ? (
@@ -1808,9 +1918,6 @@ export default function Imoveis() {
                   >
                     {visualizando.titulo || "Imóvel"}
                   </h2>
-                  <p className="text-muted small mb-0">
-                    Código {textoOuTraco(visualizando.codigo)}
-                  </p>
                 </div>
                 <button
                   type="button"
@@ -1825,7 +1932,11 @@ export default function Imoveis() {
                 <div className="detalhe-grade mb-4">
                   <div>
                     <span>Tipo</span>
-                    <strong>{textoOuTraco(visualizando.tipo)}</strong>
+                    <strong>
+                      {visualizando.tipo === "Outro" && visualizando.tipo_outro
+                        ? `Outro: ${visualizando.tipo_outro}`
+                        : textoOuTraco(visualizando.tipo)}
+                    </strong>
                   </div>
                   <div>
                     <span>Finalidade</span>
@@ -1833,7 +1944,16 @@ export default function Imoveis() {
                   </div>
                   <div>
                     <span>Status</span>
-                    <strong>{rotuloStatus(visualizando.status)}</strong>
+                    <strong>
+                      {rotuloStatus(
+                        obterSituacaoImovel(visualizando, contratos).ocupacao
+                      )}
+                    </strong>
+                    {obterSituacaoImovel(visualizando, contratos).emManutencao && (
+                      <span className="badge bg-warning-subtle text-warning-emphasis mt-1">
+                        Em manutenção
+                      </span>
+                    )}
                   </div>
                   <div>
                     <span>Valor</span>
