@@ -3,6 +3,8 @@ const assert = require("node:assert/strict")
 const {
   formatarCpf,
   formatarTelefone,
+  primeiroNome,
+  textoVencimentoMensal,
 } = require("../lib/formatacao")
 
 test("formata CPF com 11 dígitos", () => {
@@ -24,4 +26,19 @@ test("formata telefone fixo e celular", () => {
 test("mantém telefone fora do padrão e vazio", () => {
   assert.equal(formatarTelefone(""), "-")
   assert.equal(formatarTelefone("123"), "123")
+})
+
+test("exibe somente o primeiro nome", () => {
+  assert.equal(primeiroNome("Maria Inês da Silva"), "Maria")
+  assert.equal(primeiroNome("  João  "), "João")
+  assert.equal(primeiroNome(""), "-")
+  assert.equal(primeiroNome(null), "-")
+})
+
+test("descreve o vencimento mensal do contrato", () => {
+  assert.equal(textoVencimentoMensal(10), "Dia 10 de cada mês")
+  assert.equal(textoVencimentoMensal("5"), "Dia 5 de cada mês")
+  assert.equal(textoVencimentoMensal(0), "Não informado")
+  assert.equal(textoVencimentoMensal(32), "Não informado")
+  assert.equal(textoVencimentoMensal(null), "Não informado")
 })

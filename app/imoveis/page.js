@@ -638,7 +638,7 @@ export default function Imoveis() {
       {/* CABEÇALHO */}
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
 
-        <div>
+        <div className="page-heading page-heading--imoveis">
           <h2 className="fw-bold mb-1">
             Imóveis
           </h2>
@@ -997,7 +997,7 @@ export default function Imoveis() {
                     <th>Tipo</th>
                     <th>Finalidade</th>
                     <th>Localização</th>
-                    <th>Valor</th>
+                    <th>Valor do imóvel</th>
                     <th>Status</th>
                     <th className="text-end">
                       Ações
