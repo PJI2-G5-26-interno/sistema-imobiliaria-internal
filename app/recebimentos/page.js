@@ -2,6 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import {
+  baixarPdf,
+  gerarReciboPdf,
+  mesReferencia,
+  nomeArquivoRecibo,
+} from "../../lib/recibo"
 export default function Recebimentos() {
   const hoje = new Date()
   const dataHoje = hoje.toISOString().split("T")[0]
@@ -563,6 +569,24 @@ export default function Recebimentos() {
     }
   }
 
+  function baixarRecibo(item) {
+    const numero =
+      item.numero_contrato ||
+      numeroContrato(item.contrato_id)
+
+    const bytes = gerarReciboPdf({
+      nomeCliente: nomeCliente(item.cliente_id),
+      numeroContrato: numero,
+      valorRecebido: formatarMoeda(item.valor),
+      mesReferencia: mesReferencia(item.data_vencimento),
+    })
+
+    baixarPdf(
+      bytes,
+      nomeArquivoRecibo(numero, item.data_vencimento)
+    )
+  }
+
   async function excluirRecebimento(id) {
     const confirmar =
       window.confirm(
@@ -1087,6 +1111,15 @@ export default function Recebimentos() {
                         <td>
 
                           <div className="d-flex justify-content-end gap-2">
+
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-secondary"
+                              onClick={() => baixarRecibo(item)}
+                            >
+                              <i className="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                              Recibo
+                            </button>
 
                             <button
                               type="button"

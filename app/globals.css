@@ -208,6 +208,55 @@ body {
   color: var(--texto);
 }
 
+.page-heading {
+  border-radius: 0.9rem;
+  padding: 0.85rem 1.1rem;
+}
+
+.page-heading p {
+  margin-top: 0.2rem;
+  margin-bottom: 0;
+}
+
+.app-content .page-heading--clientes {
+  background: #dbeafe;
+}
+
+.app-content .page-heading--clientes h1,
+.app-content .page-heading--clientes h2 {
+  color: #1e3a8a;
+}
+
+.app-content .page-heading--clientes .text-muted {
+  color: #1e40af;
+}
+
+.app-content .page-heading--imoveis {
+  background: #dcfce7;
+}
+
+.app-content .page-heading--imoveis h1,
+.app-content .page-heading--imoveis h2 {
+  color: #14532d;
+}
+
+.app-content .page-heading--imoveis .text-muted {
+  color: #166534;
+}
+
+.app-content .page-heading--contratos {
+  background: #fef3c7;
+}
+
+.app-content .page-heading--contratos h1,
+.app-content .page-heading--contratos h2 {
+  color: #713f12;
+}
+
+.app-content .page-heading--contratos .text-muted {
+  color: #854d0e;
+}
+
 .card {
   border: 1px solid var(--linha);
   border-radius: 1rem;
