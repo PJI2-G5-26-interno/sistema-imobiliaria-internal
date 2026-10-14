@@ -5,7 +5,6 @@ import { supabase } from "../../lib/supabase"
 import {
   baixarPdf,
   gerarReciboPdf,
-  mesReferencia,
   nomeArquivoRecibo,
 } from "../../lib/recibo"
 export default function Recebimentos() {
@@ -15,6 +14,7 @@ export default function Recebimentos() {
   const [recebimentos, setRecebimentos] = useState([])
   const [clientes, setClientes] = useState([])
   const [contratos, setContratos] = useState([])
+  const [imoveis, setImoveis] = useState([])
 
   const [loading, setLoading] = useState(true)
   const [salvando, setSalvando] = useState(false)
@@ -84,6 +84,7 @@ export default function Recebimentos() {
         recebimentosResult,
         clientesResult,
         contratosResult,
+        imoveisResult,
       ] = await Promise.all([
         supabase
           .from("recebimentos")
@@ -105,6 +106,10 @@ export default function Recebimentos() {
           .order("id", {
             ascending: false,
           }),
+
+        supabase
+          .from("imoveis")
+          .select("id, informacoes_adicionais_imoveis(nome_proprietario)"),
       ])
 
       if (recebimentosResult.error) {
@@ -119,6 +124,10 @@ export default function Recebimentos() {
         throw contratosResult.error
       }
 
+      if (imoveisResult.error) {
+        throw imoveisResult.error
+      }
+
       setRecebimentos(
         recebimentosResult.data || []
       )
@@ -129,6 +138,10 @@ export default function Recebimentos() {
 
       setContratos(
         contratosResult.data || []
+      )
+
+      setImoveis(
+        imoveisResult.data || []
       )
     } catch (error) {
       console.error(
@@ -569,6 +582,24 @@ export default function Recebimentos() {
     }
   }
 
+  function nomeProprietarioDoRecebimento(item) {
+    const contrato = contratos.find(
+      (atual) =>
+        String(atual.id) === String(item.contrato_id)
+    )
+    const imovelId =
+      item.imovel_id ||
+      contrato?.imovel_id ||
+      contrato?.imovel
+    const imovel = imoveis.find(
+      (atual) => String(atual.id) === String(imovelId)
+    )
+    const info = imovel?.informacoes_adicionais_imoveis
+    const registro = Array.isArray(info) ? info[0] : info
+
+    return registro?.nome_proprietario || ""
+  }
+
   function baixarRecibo(item) {
     const numero =
       item.numero_contrato ||
@@ -576,9 +607,11 @@ export default function Recebimentos() {
 
     const bytes = gerarReciboPdf({
       nomeCliente: nomeCliente(item.cliente_id),
-      numeroContrato: numero,
-      valorRecebido: formatarMoeda(item.valor),
-      mesReferencia: mesReferencia(item.data_vencimento),
+      valor: item.valor,
+      dataReferencia: item.data_vencimento,
+      formaPagamento: item.forma_pagamento,
+      tipoRecebimento: item.tipo_recebimento,
+      nomeProprietario: nomeProprietarioDoRecebimento(item),
     })
 
     baixarPdf(
