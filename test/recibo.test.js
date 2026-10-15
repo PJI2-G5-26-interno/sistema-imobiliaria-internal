@@ -37,6 +37,8 @@ test("monta o recibo no texto corrido do comprovante", () => {
     formaPagamento: "Pix",
     tipoRecebimento: "Aluguel mensal",
     nomeProprietario: "Manoel Martins Cavalcante",
+    cidade: "Miracatu",
+    estado: "SP",
   })
 
   assert.equal(texto.titulo, "RECIBO")
@@ -57,14 +59,21 @@ test("gera um PDF de recibo com o texto por extenso", () => {
       formaPagamento: "Pix",
       tipoRecebimento: "Aluguel mensal",
       nomeProprietario: "João da Silva",
+      cidade: "Registro",
+      estado: "sp",
     })
   )
 
   assert.match(pdf, /^%PDF-1\.4/)
+  assert.match(pdf, /Helvetica-Bold/)
   assert.match(pdf, /RECIBO/)
+  const linhaAssinatura = pdf.match(/(\d+) (\d+) m/)
+  assert.ok(linhaAssinatura)
+  assert.ok(Number(linhaAssinatura[2]) < 140)
   assert.match(pdf, /R\$ 1\.250,00/)
   assert.match(pdf, /OUTUBRO DE 2\.026/)
-  assert.match(pdf, /Miracatu\/SP/)
+  assert.match(pdf, /Registro\/SP/)
+  assert.doesNotMatch(pdf, /Miracatu/)
   assert.match(pdf, /Jo\\343o da Silva/)
   assert.doesNotMatch(pdf, /323\.919\.028-16/)
   assert.match(pdf, /\\307/)
