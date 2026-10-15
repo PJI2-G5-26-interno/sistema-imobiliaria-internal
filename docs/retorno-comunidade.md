@@ -20,6 +20,8 @@
   - Cônjuge (apenas o 1º nome)
   - Telefone secundário
 
+- Remover o botão de cadastrar clientes na parte superior da tabela  
+
 ### Modal de visualização
 
 - Criar um botão Visualizar ("Ver") na coluna Ações, ao lado de Editar e Excluir.
@@ -44,6 +46,9 @@
   - Cliente (exibir somente o 1º nome)
   - Status
 
+- Remover o botão de cadastrar contrato na parte superior da tabela  
+
+
 ### Modal de visualização (botão Ver)
 
 - Cliente e cônjuge: exibir nome completo e telefone do cliente, mais nome e telefone do cônjuge.
@@ -51,6 +56,8 @@
 - Vencimento: exibir a data/dia de vencimento mensal do contrato (exemplo: "Dia 10 de cada mês").
 
 ## 5. Página: Recebimentos
+
+- Adicionar o botão atualizar na parte superior do cabeçalho, ao lado do título recebimentos 
 
 ### Gerador de recibo em PDF
 
