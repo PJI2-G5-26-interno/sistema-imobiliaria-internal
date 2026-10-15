@@ -972,18 +972,9 @@ export default function Imoveis() {
                 Nenhum imóvel encontrado
               </h6>
 
-              <p className="text-muted mb-3">
+              <p className="text-muted mb-0">
                 Não encontramos imóveis com os filtros informados.
               </p>
-
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={abrirNovoImovel}
-              >
-                <i className="bi bi-plus-lg me-2"></i>
-                Cadastrar imóvel
-              </button>
 
             </div>
           ) : (

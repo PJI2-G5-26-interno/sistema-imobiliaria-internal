@@ -401,7 +401,7 @@ export default function DespesasPage() {
             <i className="bi bi-wallet2 text-primary fs-4"></i>
           </div>
 
-          <div>
+          <div className="page-heading page-heading--despesas">
 
             <h2 className="mb-1 fw-bold">
               Despesas
@@ -708,20 +708,9 @@ export default function DespesasPage() {
                 Nenhuma despesa encontrada
               </h6>
 
-              <p className="text-muted mb-3">
+              <p className="text-muted mb-0">
                 Não existem despesas para os filtros selecionados.
               </p>
-
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={
-                  abrirNovaDespesa
-                }
-              >
-                <i className="bi bi-plus-lg me-2"></i>
-                Cadastrar despesa
-              </button>
 
             </div>
           ) : (

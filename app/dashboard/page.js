@@ -758,23 +758,13 @@ export default function Dashboard() {
       {/* RESUMO DAS DESPESAS */}
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
-          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-            <div>
-              <h5 className="fw-bold mb-1">
-                Resumo das despesas
-              </h5>
-              <p className="text-muted mb-0">
-                Competência de {hoje.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
-              </p>
-            </div>
-            <button
-              type="button"
-              className="btn btn-outline-primary btn-sm"
-              onClick={() => acessarPagina("/despesas")}
-            >
-              Ver despesas
-              <i className="bi bi-arrow-right" aria-hidden="true"></i>
-            </button>
+          <div className="mb-4">
+            <h5 className="fw-bold mb-1">
+              Resumo das despesas
+            </h5>
+            <p className="text-muted mb-0">
+              Competência de {hoje.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+            </p>
           </div>
 
           <div className="row g-3 mb-4">
@@ -1108,22 +1098,10 @@ export default function Dashboard() {
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-body">
 
-          <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
-            <div>
-              <h5 className="fw-bold mb-1">
-                Últimos recebimentos
-              </h5>
-
-
-            </div>
-
-            <button
-              className="btn btn-outline-primary btn-sm"
-              onClick={() => acessarPagina("/recebimentos")}
-            >
-              Ver todos
-              <i className="bi bi-arrow-right ms-1"></i>
-            </button>
+          <div className="mb-4">
+            <h5 className="fw-bold mb-1">
+              Últimos recebimentos
+            </h5>
           </div>
 
           {ultimosRecebimentos.length === 0 ? (
