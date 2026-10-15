@@ -2,6 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../../lib/supabase"
+import {
+  baixarPdf,
+  gerarReciboPdf,
+  localidadeDoImovel,
+  nomeArquivoRecibo,
+  resolverImovelDoRecebimento,
+} from "../../lib/recibo"
 export default function Recebimentos() {
   const hoje = new Date()
   const dataHoje = hoje.toISOString().split("T")[0]
@@ -9,6 +16,7 @@ export default function Recebimentos() {
   const [recebimentos, setRecebimentos] = useState([])
   const [clientes, setClientes] = useState([])
   const [contratos, setContratos] = useState([])
+  const [imoveis, setImoveis] = useState([])
 
   const [loading, setLoading] = useState(true)
   const [salvando, setSalvando] = useState(false)
@@ -78,6 +86,7 @@ export default function Recebimentos() {
         recebimentosResult,
         clientesResult,
         contratosResult,
+        imoveisResult,
       ] = await Promise.all([
         supabase
           .from("recebimentos")
@@ -99,6 +108,10 @@ export default function Recebimentos() {
           .order("id", {
             ascending: false,
           }),
+
+        supabase
+          .from("imoveis")
+          .select("id, titulo, endereco, bairro, cidade, estado, informacoes_adicionais_imoveis(nome_proprietario)"),
       ])
 
       if (recebimentosResult.error) {
@@ -113,6 +126,10 @@ export default function Recebimentos() {
         throw contratosResult.error
       }
 
+      if (imoveisResult.error) {
+        throw imoveisResult.error
+      }
+
       setRecebimentos(
         recebimentosResult.data || []
       )
@@ -123,6 +140,10 @@ export default function Recebimentos() {
 
       setContratos(
         contratosResult.data || []
+      )
+
+      setImoveis(
+        imoveisResult.data || []
       )
     } catch (error) {
       console.error(
@@ -561,6 +582,32 @@ export default function Recebimentos() {
     } finally {
       setSalvando(false)
     }
+  }
+
+  function baixarRecibo(item) {
+    const numero =
+      item.numero_contrato ||
+      numeroContrato(item.contrato_id)
+    const imovel = resolverImovelDoRecebimento(item, contratos, imoveis)
+    const info = imovel?.informacoes_adicionais_imoveis
+    const registro = Array.isArray(info) ? info[0] : info
+    const local = localidadeDoImovel(imovel)
+
+    const bytes = gerarReciboPdf({
+      nomeCliente: nomeCliente(item.cliente_id),
+      valor: item.valor,
+      dataReferencia: item.data_vencimento,
+      formaPagamento: item.forma_pagamento,
+      tipoRecebimento: item.tipo_recebimento,
+      nomeProprietario: registro?.nome_proprietario || "",
+      cidade: local.cidade,
+      estado: local.estado,
+    })
+
+    baixarPdf(
+      bytes,
+      nomeArquivoRecibo(numero, item.data_vencimento)
+    )
   }
 
   async function excluirRecebimento(id) {
@@ -1087,6 +1134,15 @@ export default function Recebimentos() {
                         <td>
 
                           <div className="d-flex justify-content-end gap-2">
+
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-secondary"
+                              onClick={() => baixarRecibo(item)}
+                            >
+                              <i className="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                              Recibo
+                            </button>
 
                             <button
                               type="button"

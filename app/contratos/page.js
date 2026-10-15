@@ -6,6 +6,7 @@ import {
   obterCamposObrigatoriosPendentes,
   mensagemCamposObrigatorios,
 } from "../../lib/validacao"
+import { primeiroNome, textoVencimentoMensal, formatarTelefone } from "../../lib/formatacao"
 export default function Contratos() {
   // ========================================
   // DADOS
@@ -93,7 +94,7 @@ export default function Contratos() {
 
         supabase
           .from("imoveis")
-          .select("*")
+          .select("*, informacoes_adicionais_imoveis(*)")
           .order("created_at", {
             ascending: false,
           }),
@@ -190,29 +191,50 @@ export default function Contratos() {
   // NOMES RELACIONADOS
   // ========================================
 
-  function obterNomeCliente(clienteId) {
-    const cliente = clientes.find(
+  function obterCliente(clienteId) {
+    return clientes.find(
       (item) =>
         String(item.id) === String(clienteId)
-    )
+    ) || null
+  }
 
+  function obterNomeCliente(clienteId) {
     return (
-      cliente?.nome ||
+      obterCliente(clienteId)?.nome ||
       "Cliente não encontrado"
     )
   }
 
-  function obterNomeImovel(imovelId) {
-    const imovel = imoveis.find(
+  function obterImovel(imovelId) {
+    return imoveis.find(
       (item) =>
         String(item.id) === String(imovelId)
-    )
+    ) || null
+  }
+
+  function obterNomeImovel(imovelId) {
+    const imovel = obterImovel(imovelId)
 
     return (
       imovel?.titulo ||
       imovel?.nome ||
       "Imóvel não encontrado"
     )
+  }
+
+  function infoDoImovel(imovel) {
+    const lista = imovel?.informacoes_adicionais_imoveis
+
+    if (Array.isArray(lista)) {
+      return lista[0] || null
+    }
+
+    return lista || null
+  }
+
+  function textoOuTraco(valor) {
+    const texto = String(valor || "").trim()
+    return texto || "—"
   }
 
   // ========================================
@@ -669,7 +691,7 @@ export default function Contratos() {
       ================================== */}
 
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-        <div>
+        <div className="page-heading page-heading--contratos">
           <h1 className="fw-bold mb-1">
             Contratos
           </h1>
@@ -1022,11 +1044,7 @@ export default function Contratos() {
                 <thead className="table-light">
                   <tr>
                     <th className="px-3">
-                      Nº contrato
-                    </th>
-
-                    <th>
-                      Cliente
+                      Nº de contrato
                     </th>
 
                     <th>
@@ -1038,11 +1056,15 @@ export default function Contratos() {
                     </th>
 
                     <th>
+                      Valor do contrato
+                    </th>
+
+                    <th>
                       Período
                     </th>
 
                     <th>
-                      Valor
+                      Cliente
                     </th>
 
                     <th>
@@ -1067,27 +1089,6 @@ export default function Contratos() {
 
                         <td>
                           <div className="d-flex align-items-center gap-2">
-                            <div
-                              className="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center"
-                              style={{
-                                width: "36px",
-                                height: "36px",
-                                minWidth: "36px",
-                              }}
-                            >
-                              <i className="bi bi-person"></i>
-                            </div>
-
-                            <span>
-                              {obterNomeCliente(
-                                contrato.cliente
-                              )}
-                            </span>
-                          </div>
-                        </td>
-
-                        <td>
-                          <div className="d-flex align-items-center gap-2">
                             <i className="bi bi-house text-primary"></i>
 
                             <span>
@@ -1100,6 +1101,14 @@ export default function Contratos() {
 
                         <td>
                           {contrato.tipo || "-"}
+                        </td>
+
+                        <td>
+                          <span className="fw-semibold">
+                            {formatarMoeda(
+                              contrato.valor
+                            )}
+                          </span>
                         </td>
 
                         <td>
@@ -1125,9 +1134,9 @@ export default function Contratos() {
                         </td>
 
                         <td>
-                          <span className="fw-semibold">
-                            {formatarMoeda(
-                              contrato.valor
+                          <span title={obterNomeCliente(contrato.cliente)}>
+                            {primeiroNome(
+                              obterCliente(contrato.cliente)?.nome
                             )}
                           </span>
                         </td>
@@ -1621,7 +1630,7 @@ export default function Contratos() {
           tabIndex={-1}
           style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
         >
-          <div className="modal-dialog modal-lg modal-dialog-centered">
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content">
               <div className="modal-header">
                 <div>
@@ -1640,24 +1649,119 @@ export default function Contratos() {
                 />
               </div>
               <div className="modal-body">
-                <dl className="row mb-0">
-                  <dt className="col-sm-4">Código</dt>
-                  <dd className="col-sm-8">{contratoVisualizando.numero}</dd>
-                  <dt className="col-sm-4">Cliente</dt>
-                  <dd className="col-sm-8">{obterNomeCliente(contratoVisualizando.cliente)}</dd>
-                  <dt className="col-sm-4">Imóvel</dt>
-                  <dd className="col-sm-8">{obterNomeImovel(contratoVisualizando.imovel)}</dd>
-                  <dt className="col-sm-4">Tipo e status</dt>
-                  <dd className="col-sm-8">
-                    {contratoVisualizando.tipo} · {obterTextoStatus(contratoVisualizando.status)}
-                  </dd>
-                  <dt className="col-sm-4">Período</dt>
-                  <dd className="col-sm-8">
-                    {formatarData(contratoVisualizando.data_inicio)} a {formatarData(contratoVisualizando.data_fim)}
-                  </dd>
-                  <dt className="col-sm-4">Valor</dt>
-                  <dd className="col-sm-8">{formatarMoeda(contratoVisualizando.valor)}</dd>
-                </dl>
+                {(() => {
+                  const cliente = obterCliente(contratoVisualizando.cliente)
+                  const imovel = obterImovel(contratoVisualizando.imovel)
+                  const info = infoDoImovel(imovel)
+
+                  return (
+                    <>
+                      <h3 className="h6 fw-bold mb-3">Cliente e cônjuge</h3>
+                      <div className="detalhe-grade mb-4">
+                        <div>
+                          <span>Nome do cliente</span>
+                          <strong>{textoOuTraco(cliente?.nome)}</strong>
+                        </div>
+                        <div>
+                          <span>Telefone do cliente</span>
+                          <strong>{formatarTelefone(cliente?.telefone)}</strong>
+                        </div>
+                        <div>
+                          <span>Nome do cônjuge</span>
+                          <strong>{textoOuTraco(cliente?.conjuge)}</strong>
+                        </div>
+                        <div>
+                          <span>Telefone do cônjuge</span>
+                          <strong>{formatarTelefone(cliente?.telefone_secundario)}</strong>
+                        </div>
+                      </div>
+
+                      <h3 className="h6 fw-bold mb-3">Imóvel</h3>
+                      <div className="detalhe-grade mb-4">
+                        <div>
+                          <span>Imóvel</span>
+                          <strong>{textoOuTraco(imovel?.titulo || imovel?.nome)}</strong>
+                        </div>
+                        <div>
+                          <span>Endereço</span>
+                          <strong>
+                            {textoOuTraco(
+                              [imovel?.endereco, imovel?.numero, imovel?.complemento]
+                                .filter(Boolean)
+                                .join(", ")
+                            )}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Bairro</span>
+                          <strong>{textoOuTraco(imovel?.bairro)}</strong>
+                        </div>
+                        <div>
+                          <span>Cidade</span>
+                          <strong>
+                            {textoOuTraco(
+                              [imovel?.cidade, imovel?.estado].filter(Boolean).join("/")
+                            )}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>CEP</span>
+                          <strong>{textoOuTraco(imovel?.cep)}</strong>
+                        </div>
+                        <div>
+                          <span>Proprietário</span>
+                          <strong>{textoOuTraco(info?.nome_proprietario)}</strong>
+                        </div>
+                        <div>
+                          <span>Código do IPTU</span>
+                          <strong>{textoOuTraco(info?.codigo_iptu)}</strong>
+                        </div>
+                        <div>
+                          <span>Código do cliente Elektro</span>
+                          <strong>{textoOuTraco(info?.codigo_cliente_elektro)}</strong>
+                        </div>
+                        <div>
+                          <span>Código do medidor Elektro</span>
+                          <strong>{textoOuTraco(info?.codigo_medidor_elektro)}</strong>
+                        </div>
+                        <div>
+                          <span>Código do cliente Sabesp (RGI)</span>
+                          <strong>{textoOuTraco(info?.codigo_cliente_sabesp_rgi)}</strong>
+                        </div>
+                        <div>
+                          <span>Código do hidrômetro</span>
+                          <strong>{textoOuTraco(info?.codigo_medidor_sabesp)}</strong>
+                        </div>
+                      </div>
+
+                      <h3 className="h6 fw-bold mb-3">Vencimento</h3>
+                      <div className="detalhe-grade mb-4">
+                        <div>
+                          <span>Dia de vencimento</span>
+                          <strong>
+                            {textoVencimentoMensal(contratoVisualizando.dia_vencimento)}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Valor do contrato</span>
+                          <strong>{formatarMoeda(contratoVisualizando.valor)}</strong>
+                        </div>
+                        <div>
+                          <span>Tipo e status</span>
+                          <strong>
+                            {contratoVisualizando.tipo} · {obterTextoStatus(contratoVisualizando.status)}
+                          </strong>
+                        </div>
+                        <div>
+                          <span>Período</span>
+                          <strong>
+                            {formatarData(contratoVisualizando.data_inicio)} a {formatarData(contratoVisualizando.data_fim)}
+                          </strong>
+                        </div>
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
               <div className="modal-footer">
                 <button

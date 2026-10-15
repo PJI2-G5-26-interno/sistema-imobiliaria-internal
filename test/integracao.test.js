@@ -81,6 +81,23 @@ test("a migration automatiza códigos e sincroniza contratos e recebimentos", ()
   assert.match(migration, /sync_recebimento_contrato/i)
 })
 
+test("a migration inclui cônjuge e telefone secundário do cliente", () => {
+  const migration = fs.readFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "supabase",
+      "migrations",
+      "20261014200000_clientes_conjuge_telefone.sql"
+    ),
+    "utf8"
+  )
+
+  assert.match(migration, /alter table public\.clientes/i)
+  assert.match(migration, /add column if not exists conjuge text/i)
+  assert.match(migration, /add column if not exists telefone_secundario text/i)
+})
+
 test("a migration separada rege manutenção e sobreposição de contratos", () => {
   const migration = fs.readFileSync(
     path.join(

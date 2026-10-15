@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../../lib/supabase"
-import { formatarCpf, formatarTelefone } from "../../lib/formatacao"
+import { formatarCpf, formatarTelefone, primeiroNome } from "../../lib/formatacao"
 import {
   obterCamposObrigatoriosPendentes,
   mensagemCamposObrigatorios,
@@ -17,6 +17,7 @@ export default function Clientes() {
   const [sucesso, setSucesso] = useState("")
   const [busca, setBusca] = useState("")
   const [modalAberto, setModalAberto] = useState(false)
+  const [visualizando, setVisualizando] = useState(null)
   const [editando, setEditando] = useState(null)
   const [camposInvalidos, setCamposInvalidos] = useState([])
 
@@ -27,6 +28,8 @@ export default function Clientes() {
     cpf: "",
     rg: "",
     telefone: "",
+    telefone_secundario: "",
+    conjuge: "",
     email: "",
   })
 
@@ -76,6 +79,8 @@ export default function Clientes() {
       cpf: "",
       rg: "",
       telefone: "",
+      telefone_secundario: "",
+      conjuge: "",
       email: "",
     })
     setCamposInvalidos([])
@@ -93,6 +98,8 @@ export default function Clientes() {
       cpf: cliente.cpf || "",
       rg: cliente.rg || "",
       telefone: cliente.telefone || "",
+      telefone_secundario: cliente.telefone_secundario || "",
+      conjuge: cliente.conjuge || "",
       email: cliente.email || "",
     })
 
@@ -143,10 +150,20 @@ export default function Clientes() {
         cliente.email || ""
       ).toLowerCase()
 
+      const conjuge = String(
+        cliente.conjuge || ""
+      ).toLowerCase()
+
+      const telefoneSecundario = String(
+        cliente.telefone_secundario || ""
+      ).toLowerCase()
+
       return (
         nome.includes(termo) ||
         cpf.includes(termo) ||
         telefone.includes(termo) ||
+        telefoneSecundario.includes(termo) ||
+        conjuge.includes(termo) ||
         email.includes(termo)
       )
     })
@@ -175,6 +192,8 @@ export default function Clientes() {
         cpf: form.cpf.trim(),
         rg: form.rg.trim(),
         telefone: form.telefone.trim(),
+        telefone_secundario: form.telefone_secundario.trim(),
+        conjuge: form.conjuge.trim(),
         email: form.email.trim(),
       }
 
@@ -215,6 +234,8 @@ export default function Clientes() {
         cpf: "",
         rg: "",
         telefone: "",
+        telefone_secundario: "",
+        conjuge: "",
         email: "",
       })
     } catch (error) {
@@ -283,10 +304,13 @@ export default function Clientes() {
       {/* CABEÇALHO */}
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-4">
 
-        <div>
+        <div className="page-heading page-heading--clientes">
           <h2 className="fw-bold mb-1">
             Clientes
           </h2>
+          <p className="text-muted mb-0">
+            Gerencie os clientes cadastrados no sistema.
+          </p>
         </div>
 
         <div className="d-flex gap-2 mt-3 mt-md-0">
@@ -456,7 +480,7 @@ export default function Clientes() {
                       id="buscaCliente"
                       type="text"
                       className="form-control"
-                      placeholder="Nome, CPF, telefone ou e-mail"
+                      placeholder="Nome, telefone ou cônjuge"
                       value={busca}
                       onChange={(e) =>
                         setBusca(e.target.value)
@@ -565,15 +589,15 @@ export default function Clientes() {
                     </th>
 
                     <th>
-                      CPF
+                      Telefone principal
                     </th>
 
                     <th>
-                      Telefone
+                      Cônjuge
                     </th>
 
                     <th>
-                      E-mail
+                      Telefone secundário
                     </th>
 
                     <th className="text-end">
@@ -609,20 +633,10 @@ export default function Clientes() {
                             <div className="fw-semibold">
                               {cliente.nome || "-"}
                             </div>
-
-                            {cliente.rg && (
-                              <small className="text-muted">
-                                RG: {cliente.rg}
-                              </small>
-                            )}
                           </div>
 
                         </div>
 
-                      </td>
-
-                      <td>
-                        {formatarCpf(cliente.cpf)}
                       </td>
 
                       <td>
@@ -632,12 +646,30 @@ export default function Clientes() {
                       </td>
 
                       <td>
-                        {cliente.email || "-"}
+                        {primeiroNome(cliente.conjuge)}
+                      </td>
+
+                      <td>
+                        {formatarTelefone(
+                          cliente.telefone_secundario
+                        )}
                       </td>
 
                       <td>
 
                         <div className="d-flex justify-content-end gap-2">
+
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            title="Ver cliente"
+                            onClick={() =>
+                              setVisualizando(cliente)
+                            }
+                          >
+                            <i className="bi bi-eye" aria-hidden="true"></i>
+                            Ver
+                          </button>
 
                           <button
                             type="button"
@@ -682,6 +714,101 @@ export default function Clientes() {
         </div>
 
       </div>
+
+      {visualizando && (
+        <div
+          className="modal fade show d-block app-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="titulo-detalhe-cliente"
+          tabIndex={-1}
+        >
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header">
+                <div>
+                  <h2
+                    id="titulo-detalhe-cliente"
+                    className="h5 modal-title fw-bold mb-1"
+                  >
+                    {visualizando.nome || "Cliente"}
+                  </h2>
+                  <p className="text-muted small mb-0">
+                    Dados cadastrados do cliente
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Fechar"
+                  onClick={() => setVisualizando(null)}
+                />
+              </div>
+
+              <div className="modal-body">
+                <div className="detalhe-grade">
+                  <div>
+                    <span>Nome completo</span>
+                    <strong>{visualizando.nome || "—"}</strong>
+                  </div>
+                  <div>
+                    <span>CPF</span>
+                    <strong>{formatarCpf(visualizando.cpf)}</strong>
+                  </div>
+                  <div>
+                    <span>RG</span>
+                    <strong>{visualizando.rg || "—"}</strong>
+                  </div>
+                  <div>
+                    <span>E-mail</span>
+                    <strong>{visualizando.email || "—"}</strong>
+                  </div>
+                  <div>
+                    <span>Telefone principal</span>
+                    <strong>{formatarTelefone(visualizando.telefone)}</strong>
+                  </div>
+                  <div>
+                    <span>Telefone secundário</span>
+                    <strong>{formatarTelefone(visualizando.telefone_secundario)}</strong>
+                  </div>
+                  <div>
+                    <span>Cônjuge</span>
+                    <strong>{visualizando.conjuge || "—"}</strong>
+                  </div>
+                  {visualizando.documento && (
+                    <div>
+                      <span>Documento</span>
+                      <strong>{visualizando.documento}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => setVisualizando(null)}
+                >
+                  Fechar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    const cliente = visualizando
+                    setVisualizando(null)
+                    abrirEditarCliente(cliente)
+                  }}
+                >
+                  <i className="bi bi-pencil" aria-hidden="true"></i>
+                  Editar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
 {/* MODAL - NOVO / EDITAR CLIENTE */}
       {modalAberto && (
@@ -823,6 +950,33 @@ export default function Clientes() {
 
                     </div>
 
+                    {/* CÔNJUGE */}
+                    <div className="col-12 col-md-6">
+
+                      <label
+                        htmlFor="conjuge"
+                        className="form-label fw-semibold"
+                      >
+                        Cônjuge
+                      </label>
+
+                      <input
+                        id="conjuge"
+                        type="text"
+                        className="form-control"
+                        value={form.conjuge}
+                        onChange={(e) =>
+                          alterarCampo(
+                            "conjuge",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Nome do cônjuge"
+                        maxLength={120}
+                      />
+
+                    </div>
+
                     {/* TELEFONE */}
                     <div className="col-12 col-md-6">
 
@@ -830,7 +984,7 @@ export default function Clientes() {
                         htmlFor="telefone"
                         className="form-label fw-semibold"
                       >
-                        Telefone <span className="text-danger" aria-hidden="true">*</span>
+                        Telefone principal <span className="text-danger" aria-hidden="true">*</span>
                       </label>
 
                       <input
@@ -852,6 +1006,33 @@ export default function Clientes() {
                           Informe o telefone.
                         </div>
                       )}
+
+                    </div>
+
+                    {/* TELEFONE SECUNDÁRIO */}
+                    <div className="col-12 col-md-6">
+
+                      <label
+                        htmlFor="telefone_secundario"
+                        className="form-label fw-semibold"
+                      >
+                        Telefone secundário
+                      </label>
+
+                      <input
+                        id="telefone_secundario"
+                        type="text"
+                        className="form-control"
+                        value={form.telefone_secundario}
+                        onChange={(e) =>
+                          alterarCampo(
+                            "telefone_secundario",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Telefone do cônjuge ou outro contato"
+                        maxLength={20}
+                      />
 
                     </div>
 
