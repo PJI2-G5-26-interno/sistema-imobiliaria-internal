@@ -4,6 +4,8 @@ const {
   mesReferencia,
   valorPorExtenso,
   montarTextoRecibo,
+  resolverImovelDoRecebimento,
+  localidadeDoImovel,
   gerarReciboPdf,
   nomeArquivoRecibo,
 } = require("../lib/recibo")
@@ -27,6 +29,38 @@ test("escreve o valor em reais por extenso", () => {
     "HUM REAL E CINQUENTA CENTAVOS"
   )
   assert.equal(valorPorExtenso(0.01), "HUM CENTAVO")
+})
+
+test("busca a cidade no endereço do imóvel vinculado ao recebimento", () => {
+  const casa = {
+    id: 8,
+    titulo: "Casa 2",
+    endereco: "Rua das Flores, 120",
+    bairro: "Centro",
+    cidade: "Miracatu",
+    estado: "SP",
+  }
+  const imovel = resolverImovelDoRecebimento(
+    { contrato_id: null, numero_contrato: "CT-008", cliente_id: 4 },
+    [{ id: 3, numero: "CT-008", cliente: "4", imovel: "Casa 2", imovel_id: null }],
+    [casa]
+  )
+  const local = localidadeDoImovel(imovel)
+
+  assert.equal(imovel.titulo, "Casa 2")
+  assert.equal(local.cidade, "Miracatu")
+  assert.equal(local.estado, "SP")
+})
+
+test("lê a cidade no texto do endereço quando a coluna cidade está vazia", () => {
+  const local = localidadeDoImovel({
+    endereco: "Rua Principal, 10, Miracatu/SP",
+    cidade: "",
+    estado: "",
+  })
+
+  assert.equal(local.cidade, "Miracatu")
+  assert.equal(local.estado, "SP")
 })
 
 test("monta o recibo no texto corrido do comprovante", () => {

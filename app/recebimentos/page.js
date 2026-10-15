@@ -5,7 +5,9 @@ import { supabase } from "../../lib/supabase"
 import {
   baixarPdf,
   gerarReciboPdf,
+  localidadeDoImovel,
   nomeArquivoRecibo,
+  resolverImovelDoRecebimento,
 } from "../../lib/recibo"
 export default function Recebimentos() {
   const hoje = new Date()
@@ -109,7 +111,7 @@ export default function Recebimentos() {
 
         supabase
           .from("imoveis")
-          .select("id, cidade, estado, informacoes_adicionais_imoveis(nome_proprietario)"),
+          .select("id, titulo, endereco, bairro, cidade, estado, informacoes_adicionais_imoveis(nome_proprietario)"),
       ])
 
       if (recebimentosResult.error) {
@@ -582,28 +584,14 @@ export default function Recebimentos() {
     }
   }
 
-  function imovelDoRecebimento(item) {
-    const contrato = contratos.find(
-      (atual) =>
-        String(atual.id) === String(item.contrato_id)
-    )
-    const imovelId =
-      item.imovel_id ||
-      contrato?.imovel_id ||
-      contrato?.imovel
-
-    return imoveis.find(
-      (atual) => String(atual.id) === String(imovelId)
-    )
-  }
-
   function baixarRecibo(item) {
     const numero =
       item.numero_contrato ||
       numeroContrato(item.contrato_id)
-    const imovel = imovelDoRecebimento(item)
+    const imovel = resolverImovelDoRecebimento(item, contratos, imoveis)
     const info = imovel?.informacoes_adicionais_imoveis
     const registro = Array.isArray(info) ? info[0] : info
+    const local = localidadeDoImovel(imovel)
 
     const bytes = gerarReciboPdf({
       nomeCliente: nomeCliente(item.cliente_id),
@@ -612,8 +600,8 @@ export default function Recebimentos() {
       formaPagamento: item.forma_pagamento,
       tipoRecebimento: item.tipo_recebimento,
       nomeProprietario: registro?.nome_proprietario || "",
-      cidade: imovel?.cidade,
-      estado: imovel?.estado,
+      cidade: local.cidade,
+      estado: local.estado,
     })
 
     baixarPdf(
