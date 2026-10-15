@@ -657,7 +657,7 @@ export default function Recebimentos() {
 
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
 
-        <div>
+        <div className="page-heading page-heading--recebimentos">
 
           <h1 className="h3 fw-bold mb-1">
             Recebimentos
@@ -669,17 +669,29 @@ export default function Recebimentos() {
 
         </div>
 
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={abrirNovo}
-        >
-          <span className="me-2">
-            +
-          </span>
+        <div className="d-flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn btn-outline-primary"
+            onClick={carregarDados}
+            disabled={loading}
+          >
+            <i className="bi bi-arrow-clockwise" aria-hidden="true"></i>
+            {loading ? "Atualizando..." : "Atualizar"}
+          </button>
 
-          Novo recebimento
-        </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={abrirNovo}
+          >
+            <span className="me-2">
+              +
+            </span>
+
+            Novo recebimento
+          </button>
+        </div>
 
       </div>
 
@@ -1013,17 +1025,9 @@ export default function Recebimentos() {
                 Nenhum recebimento encontrado
               </h3>
 
-              <p className="text-muted mb-3">
+              <p className="text-muted mb-0">
                 Não existem recebimentos para os filtros selecionados.
               </p>
-
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={abrirNovo}
-              >
-                Novo recebimento
-              </button>
 
             </div>
 

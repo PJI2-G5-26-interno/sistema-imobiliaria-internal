@@ -359,7 +359,7 @@ export default function FinanceiroPage() {
             <i className="bi bi-bar-chart-line text-primary fs-4"></i>
           </div>
 
-          <div>
+          <div className="page-heading page-heading--financeiro">
 
             <h2 className="mb-1 fw-bold">
               Financeiro

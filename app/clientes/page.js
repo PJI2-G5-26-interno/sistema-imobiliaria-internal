@@ -461,7 +461,7 @@ export default function Clientes() {
 
               <div className="row g-3 align-items-end">
 
-                <div className="col-12 col-md-8">
+                <div className="col-12">
 
                   <label
                     htmlFor="buscaCliente"
@@ -498,19 +498,6 @@ export default function Clientes() {
                     )}
 
                   </div>
-
-                </div>
-
-                <div className="col-12 col-md-4">
-
-                  <button
-                    type="button"
-                    className="btn btn-primary w-100"
-                    onClick={abrirNovoCliente}
-                  >
-                    <i className="bi bi-person-plus me-2"></i>
-                    Cadastrar cliente
-                  </button>
 
                 </div>
 
@@ -555,22 +542,11 @@ export default function Clientes() {
                 Nenhum cliente encontrado
               </h5>
 
-              <p className="text-muted mb-3">
+              <p className="text-muted mb-0">
                 {busca
                   ? "Não encontramos clientes para a pesquisa informada."
                   : "Ainda não existem clientes cadastrados."}
               </p>
-
-              {!busca && (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={abrirNovoCliente}
-                >
-                  <i className="bi bi-person-plus me-2"></i>
-                  Cadastrar primeiro cliente
-                </button>
-              )}
 
             </div>
 
