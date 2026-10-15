@@ -965,33 +965,22 @@ export default function Contratos() {
       <div className="card border-0 shadow-sm">
         <div className="card-body p-0">
           <div className="p-3 border-bottom">
-            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <div>
-                <h5 className="fw-bold mb-1">
-                  Contratos cadastrados
-                </h5>
+            <div>
+              <h5 className="fw-bold mb-1">
+                Contratos cadastrados
+              </h5>
 
-                <p className="text-muted mb-0 small">
-                  {contratosFiltrados.length}{" "}
-                  contrato
-                  {contratosFiltrados.length !== 1
-                    ? "s"
-                    : ""}{" "}
-                  encontrado
-                  {contratosFiltrados.length !== 1
-                    ? "s"
-                    : ""}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={abrirNovoContrato}
-              >
-                <i className="bi bi-plus-lg me-2"></i>
-                Novo contrato
-              </button>
+              <p className="text-muted mb-0 small">
+                {contratosFiltrados.length}{" "}
+                contrato
+                {contratosFiltrados.length !== 1
+                  ? "s"
+                  : ""}{" "}
+                encontrado
+                {contratosFiltrados.length !== 1
+                  ? "s"
+                  : ""}
+              </p>
             </div>
           </div>
 
@@ -1020,23 +1009,11 @@ export default function Contratos() {
                 Nenhum contrato encontrado
               </h5>
 
-              <p className="text-muted mb-3">
+              <p className="text-muted mb-0">
                 {busca || filtroStatus !== "todos"
                   ? "Tente alterar os filtros utilizados."
                   : "Cadastre o primeiro contrato para começar."}
               </p>
-
-              {!busca &&
-                filtroStatus === "todos" && (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={abrirNovoContrato}
-                  >
-                    <i className="bi bi-plus-lg me-2"></i>
-                    Novo contrato
-                  </button>
-                )}
             </div>
           ) : (
             <div className="table-responsive">

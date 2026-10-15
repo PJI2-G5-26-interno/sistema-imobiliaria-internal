@@ -257,6 +257,45 @@ body {
   color: #854d0e;
 }
 
+.app-content .page-heading--recebimentos {
+  background: #cffafe;
+}
+
+.app-content .page-heading--recebimentos h1,
+.app-content .page-heading--recebimentos h2 {
+  color: #155e75;
+}
+
+.app-content .page-heading--recebimentos .text-muted {
+  color: #0e7490;
+}
+
+.app-content .page-heading--despesas {
+  background: #ffe4e6;
+}
+
+.app-content .page-heading--despesas h1,
+.app-content .page-heading--despesas h2 {
+  color: #9f1239;
+}
+
+.app-content .page-heading--despesas .text-muted {
+  color: #be123c;
+}
+
+.app-content .page-heading--financeiro {
+  background: #ede9fe;
+}
+
+.app-content .page-heading--financeiro h1,
+.app-content .page-heading--financeiro h2 {
+  color: #5b21b6;
+}
+
+.app-content .page-heading--financeiro .text-muted {
+  color: #6d28d9;
+}
+
 .card {
   border: 1px solid var(--linha);
   border-radius: 1rem;
