@@ -1,6 +1,38 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 
+function aplicarCookies(destino, origem) {
+  origem.cookies.getAll().forEach((cookie) => {
+    destino.cookies.set({
+      name: cookie.name,
+      value: cookie.value,
+      path: cookie.path,
+      domain: cookie.domain,
+      expires: cookie.expires,
+      httpOnly: cookie.httpOnly,
+      maxAge: cookie.maxAge,
+      sameSite: cookie.sameSite,
+      secure: cookie.secure,
+    });
+  });
+
+  return destino;
+}
+
+async function ehAdminAtivo(supabase, user) {
+  if (!user) {
+    return false;
+  }
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("ativo")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  return data?.ativo === true;
+}
+
 export async function middleware(request) {
   let response = NextResponse.next({
     request,
@@ -37,26 +69,38 @@ export async function middleware(request) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
+  const adminAtivo = await ehAdminAtivo(supabase, user);
 
-  // A página inicial é pública: é o login
+  if (pathname === "/api/login") {
+    return response;
+  }
+
   if (pathname === "/") {
-    if (user) {
-      return NextResponse.redirect(
-        new URL("/dashboard", request.url)
+    if (user && adminAtivo) {
+      return aplicarCookies(
+        NextResponse.redirect(new URL("/dashboard", request.url)),
+        response
       );
+    }
+
+    if (user && !adminAtivo) {
+      await supabase.auth.signOut();
     }
 
     return response;
   }
 
-  // Se não estiver autenticado, volta para o login
-  if (!user) {
-    return NextResponse.redirect(
-      new URL("/", request.url)
+  if (!user || !adminAtivo) {
+    if (user) {
+      await supabase.auth.signOut();
+    }
+
+    return aplicarCookies(
+      NextResponse.redirect(new URL("/", request.url)),
+      response
     );
   }
 
-  // Usuário autenticado pode continuar
   return response;
 }
 
