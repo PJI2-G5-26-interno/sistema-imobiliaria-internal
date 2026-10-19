@@ -6,7 +6,10 @@
   - Imóveis: fundo verde
   - Clientes: fundo azul
   - Contratos: fundo amarelo
-- Validar se Recebimentos e as demais telas também devem receber uma cor específica no cabeçalho.
+  - Recebimentos: fundo verde turquesa
+  - Despesas: fundo vermelho
+  - Financeiro: fundo roxo
+
 
 ## 2. Página: Clientes
 
@@ -61,3 +64,8 @@
   - Valor recebido
   - Mês de referência do pagamento
   - Campo para assinatura, pronto para assinar e enviar como comprovante ao cliente
+
+Colaboradores pela atualização após o Feedback 
+
+- Visita e conversa ao usuário final (Mariane e Maria Inês)
+- Atualizações no código (Gustavo)
