@@ -98,6 +98,59 @@ test("a migration inclui cônjuge e telefone secundário do cliente", () => {
   assert.match(migration, /add column if not exists telefone_secundario text/i)
 })
 
+test("a migration restringe RLS ao admin ativo e o lookup de login", () => {
+  const migration = fs.readFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "supabase",
+      "migrations",
+      "20261019220000_restringe_rls_e_login.sql"
+    ),
+    "utf8"
+  )
+
+  assert.match(migration, /eh_admin_ativo/)
+  assert.match(migration, /resolver_email_admin/)
+  assert.match(migration, /drop policy if exists "login le profiles"/)
+  assert.match(migration, /revoke select on table public\.profiles from anon/)
+  assert.match(migration, /admin ativo gerencia clientes/)
+})
+
+test("o login no browser não consulta profiles nem distingue erros", () => {
+  const loginPage = fs.readFileSync(
+    path.join(__dirname, "..", "app", "page.js"),
+    "utf8"
+  )
+  const loginApi = fs.readFileSync(
+    path.join(__dirname, "..", "app", "api", "login", "route.js"),
+    "utf8"
+  )
+
+  assert.doesNotMatch(loginPage, /\.from\(\s*["']profiles["']\s*\)/)
+  assert.match(loginPage, /fetch\("\/api\/login"/)
+  assert.match(loginApi, /MENSAGEM_LOGIN_GENERICA/)
+  assert.match(loginApi, /origemDoPedidoEhValida/)
+})
+
+test("a rota de teste não permanece no deploy", () => {
+  const paginaTeste = path.join(__dirname, "..", "app", "teste", "page.js")
+
+  assert.equal(fs.existsSync(paginaTeste), false)
+})
+
+test("a borda envia headers de segurança", () => {
+  const config = fs.readFileSync(
+    path.join(__dirname, "..", "next.config.js"),
+    "utf8"
+  )
+
+  assert.match(config, /Content-Security-Policy/)
+  assert.match(config, /X-Frame-Options/)
+  assert.match(config, /X-Content-Type-Options/)
+  assert.match(config, /poweredByHeader: false/)
+})
+
 test("a migration separada rege manutenção e sobreposição de contratos", () => {
   const migration = fs.readFileSync(
     path.join(

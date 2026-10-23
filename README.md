@@ -208,6 +208,11 @@ As variáveis de ambiente utilizadas no projeto incluem:
 
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+A chave `SUPABASE_SERVICE_ROLE_KEY` é opcional e só deve existir no servidor (Vercel/`.env.local`). Ela não vai para o browser. Sem ela, o login usa a função `resolver_email_admin` no banco.
+
+O middleware só libera quem está autenticado e ativo em `profiles`. As policies RLS das tabelas de negócio exigem o mesmo. No painel do Supabase (Authentication → Providers), desative “Allow new users to sign up”.
 
 O arquivo ".env.local" deve permanecer fora do repositório.
 
@@ -220,6 +225,10 @@ Uma estrutura simplificada do projeto:
 sistema-imobiliaria/
 │
 ├── app/
+│   ├── api/
+│   │   └── login/
+│   │       └── route.js
+│   │
 │   ├── clientes/
 │   │   └── page.js
 │   │
@@ -254,6 +263,7 @@ sistema-imobiliaria/
 │       └── server.js
 │
 ├── middleware.js        (proteção das rotas)
+├── next.config.js       (headers de segurança)
 ├── .env.example
 ├── package.json
 ├── vercel.json
@@ -302,6 +312,7 @@ Preencha:
 
 NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sua_chave_publica
+SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role
 
 Depois reinicie o servidor:
 

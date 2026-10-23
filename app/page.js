@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../lib/supabase/client";
+import { MENSAGEM_LOGIN_GENERICA } from "../lib/login";
 
 export default function HomePage() {
   const router = useRouter();
@@ -16,25 +17,25 @@ export default function HomePage() {
   const [verificando, setVerificando] = useState(true);
 
   useEffect(() => {
-    verificarSessao();
-  }, []);
+    async function verificarSessao() {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-  async function verificarSessao() {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        router.replace("/dashboard");
-        return;
+        if (user) {
+          router.replace("/dashboard");
+          return;
+        }
+      } catch (error) {
+        console.error("Erro ao verificar sessão:", error);
       }
-    } catch (error) {
-      console.error("Erro ao verificar sessão:", error);
+
+      setVerificando(false);
     }
 
-    setVerificando(false);
-  }
+    verificarSessao();
+  }, [router, supabase]);
 
   async function handleLogin(event) {
     event.preventDefault();
@@ -43,90 +44,37 @@ export default function HomePage() {
 
     const nomeInformado = nome.trim();
 
-    if (!nomeInformado) {
-      setErro("Informe o nome do administrador.");
-      return;
-    }
-
-    if (!senha) {
-      setErro("Informe a senha.");
+    if (!nomeInformado || !senha) {
+      setErro(MENSAGEM_LOGIN_GENERICA);
       return;
     }
 
     setCarregando(true);
 
     try {
-      /*
-       * Procura o administrador na tabela profiles.
-       * Não precisamos de route.js nesta versão.
-       */
-      const { data: perfil, error: perfilError } = await supabase
-        .from("profiles")
-        .select("email, nome, ativo")
-        .eq("nome", nomeInformado)
-        .maybeSingle();
-
-      if (perfilError) {
-        console.error("Erro ao consultar perfil:", perfilError);
-
-        setErro(
-          "Não foi possível localizar o administrador. Verifique as permissões da tabela profiles."
-        );
-
-        setCarregando(false);
-        return;
-      }
-
-      if (!perfil) {
-        setErro("Administrador não encontrado.");
-        setCarregando(false);
-        return;
-      }
-
-      if (perfil.ativo === false) {
-        setErro("Este administrador está inativo.");
-        setCarregando(false);
-        return;
-      }
-
-      if (!perfil.email) {
-        setErro("O administrador não possui e-mail cadastrado.");
-        setCarregando(false);
-        return;
-      }
-
-      /*
-       * Login do Supabase Auth.
-       */
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: perfil.email,
-        password: senha,
+      const resposta = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: nomeInformado,
+          senha,
+        }),
       });
 
-      if (error) {
-        console.error("Erro no login:", error);
-
-        setErro("Nome ou senha inválidos.");
+      if (!resposta.ok) {
+        setErro(MENSAGEM_LOGIN_GENERICA);
         setCarregando(false);
         return;
       }
 
-      if (!data?.user) {
-        setErro("Não foi possível concluir o login.");
-        setCarregando(false);
-        return;
-      }
-
-      /*
-       * Login concluído.
-       * Vai para o dashboard existente.
-       */
       router.replace("/dashboard");
       router.refresh();
     } catch (error) {
       console.error("Erro inesperado no login:", error);
 
-      setErro("Não foi possível realizar o login.");
+      setErro(MENSAGEM_LOGIN_GENERICA);
       setCarregando(false);
     }
   }
