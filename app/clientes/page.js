@@ -2,11 +2,36 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "../../lib/supabase"
-import { formatarCpf, formatarTelefone, primeiroNome } from "../../lib/formatacao"
+import {
+  formatarCpf,
+  formatarTelefone,
+  mascararCpf,
+  mascararTelefone,
+  primeiroNome,
+  somenteDigitos,
+} from "../../lib/formatacao"
 import {
   obterCamposObrigatoriosPendentes,
   mensagemCamposObrigatorios,
 } from "../../lib/validacao"
+
+function prepararValorMascarado(valor, mascara, caracteresAceitos) {
+  const texto = String(valor || "")
+  return caracteresAceitos.test(texto) ? mascara(texto) : texto
+}
+
+function normalizarValorMascarado(valor, original) {
+  const texto = String(valor ?? "")
+  const textoOriginal = String(original ?? "")
+
+  if (texto === textoOriginal) {
+    return textoOriginal
+  }
+
+  return /^[\d\s()+.-]*$/.test(texto)
+    ? somenteDigitos(texto)
+    : texto.trim()
+}
 export default function Clientes() {
   const [clientes, setClientes] = useState([])
 
@@ -95,10 +120,22 @@ export default function Clientes() {
 
     setForm({
       nome: cliente.nome || "",
-      cpf: cliente.cpf || "",
+      cpf: prepararValorMascarado(
+        cliente.cpf,
+        mascararCpf,
+        /^[\d\s.-]*$/
+      ),
       rg: cliente.rg || "",
-      telefone: cliente.telefone || "",
-      telefone_secundario: cliente.telefone_secundario || "",
+      telefone: prepararValorMascarado(
+        cliente.telefone,
+        mascararTelefone,
+        /^[\d\s()+.-]*$/
+      ),
+      telefone_secundario: prepararValorMascarado(
+        cliente.telefone_secundario,
+        mascararTelefone,
+        /^[\d\s()+.-]*$/
+      ),
       conjuge: cliente.conjuge || "",
       email: cliente.email || "",
     })
@@ -189,10 +226,16 @@ export default function Clientes() {
     try {
       const dados = {
         nome: form.nome.trim(),
-        cpf: form.cpf.trim(),
+        cpf: normalizarValorMascarado(form.cpf, editando?.cpf),
         rg: form.rg.trim(),
-        telefone: form.telefone.trim(),
-        telefone_secundario: form.telefone_secundario.trim(),
+        telefone: normalizarValorMascarado(
+          form.telefone,
+          editando?.telefone
+        ),
+        telefone_secundario: normalizarValorMascarado(
+          form.telefone_secundario,
+          editando?.telefone_secundario
+        ),
         conjuge: form.conjuge.trim(),
         email: form.email.trim(),
       }
@@ -888,11 +931,14 @@ export default function Clientes() {
                         id="cpf"
                         type="text"
                         className="form-control"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        maxLength={14}
                         value={form.cpf}
                         onChange={(e) =>
                           alterarCampo(
                             "cpf",
-                            e.target.value
+                            mascararCpf(e.target.value)
                           )
                         }
                         placeholder="Digite o CPF"
@@ -965,13 +1011,16 @@ export default function Clientes() {
 
                       <input
                         id="telefone"
-                        type="text"
+                        type="tel"
                         className={`form-control ${camposInvalidos.includes("telefone") ? "is-invalid" : ""}`}
+                        inputMode="tel"
+                        autoComplete="tel-national"
+                        maxLength={15}
                         value={form.telefone}
                         onChange={(e) =>
                           alterarCampo(
                             "telefone",
-                            e.target.value
+                            mascararTelefone(e.target.value)
                           )
                         }
                         placeholder="Digite o telefone"
@@ -997,17 +1046,19 @@ export default function Clientes() {
 
                       <input
                         id="telefone_secundario"
-                        type="text"
+                        type="tel"
                         className="form-control"
+                        inputMode="tel"
+                        autoComplete="off"
+                        maxLength={15}
                         value={form.telefone_secundario}
                         onChange={(e) =>
                           alterarCampo(
                             "telefone_secundario",
-                            e.target.value
+                            mascararTelefone(e.target.value)
                           )
                         }
                         placeholder="Telefone do cônjuge ou outro contato"
-                        maxLength={20}
                       />
 
                     </div>
