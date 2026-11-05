@@ -83,10 +83,8 @@ export default function FinanceiroPage() {
       .toLowerCase();
 
     return [
-      "pago",
       "recebido",
-      "confirmado",
-      "realizado",
+      
     ].includes(valor);
   }
 
