@@ -2,7 +2,10 @@ const test = require("node:test")
 const assert = require("node:assert/strict")
 const {
   formatarCpf,
+  mascararCpf,
   formatarTelefone,
+  mascararTelefone,
+  somenteDigitos,
   primeiroNome,
   textoVencimentoMensal,
 } = require("../lib/formatacao")
@@ -16,6 +19,17 @@ test("não inventa máscara para CPF incompleto", () => {
   assert.equal(formatarCpf(""), "-")
   assert.equal(formatarCpf(null), "-")
   assert.equal(formatarCpf("123"), "123")
+  assert.equal(formatarCpf("1234"), "123.4")
+})
+
+test("mascara CPF durante a digitação e limita a 11 dígitos", () => {
+  assert.equal(mascararCpf("12345678901"), "123.456.789-01")
+  assert.equal(mascararCpf("123456789012"), "123.456.789-01")
+})
+
+test("extrai somente os dígitos de CPF e telefone mascarados", () => {
+  assert.equal(somenteDigitos("123.456.789-01"), "12345678901")
+  assert.equal(somenteDigitos("(11) 98765-4321"), "11987654321")
 })
 
 test("formata telefone fixo e celular", () => {
@@ -26,6 +40,13 @@ test("formata telefone fixo e celular", () => {
 test("mantém telefone fora do padrão e vazio", () => {
   assert.equal(formatarTelefone(""), "-")
   assert.equal(formatarTelefone("123"), "123")
+})
+
+test("mascara celular parcial e completo durante a digitação", () => {
+  assert.equal(mascararTelefone("11"), "(11)")
+  assert.equal(mascararTelefone("119"), "(11) 9")
+  assert.equal(mascararTelefone("11987654321"), "(11) 98765-4321")
+  assert.equal(mascararTelefone("119876543219"), "(11) 98765-4321")
 })
 
 test("exibe somente o primeiro nome", () => {
